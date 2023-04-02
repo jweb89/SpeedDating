@@ -1,0 +1,184 @@
+---
+title: "Speed Dating"
+author: "Josh Weber, Jared Lee, Michael Derkowski"
+date: "2023-04-01"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(ggplot2)
+library(tidyverse)
+
+```
+
+## Data Mutations
+
+```{r cars}
+speed_dating = read.csv("speeddating.csv", header = T)
+
+# Drop unnecessary columns
+speed_dating = subset(speed_dating, select = -c(d_d_age, d_importance_same_race, d_importance_same_religion,
+d_pref_o_attractive,d_pref_o_sincere,d_pref_o_intelligence,d_pref_o_funny,d_pref_o_ambitious,d_pref_o_shared_interests,
+d_attractive_o,d_sinsere_o,d_intelligence_o,d_funny_o,d_ambitous_o,d_shared_interests_o,
+d_attractive_important,d_sincere_important,d_intellicence_important,d_funny_important,d_ambtition_important,d_shared_interests_important,
+d_attractive,d_sincere,d_intelligence,d_funny,d_ambition,
+d_attractive_partner,d_sincere_partner,d_intelligence_partner,d_funny_partner,d_ambition_partner,d_shared_interests_partner,
+d_sports,d_tvsports,d_exercise,d_dining,d_museums,d_art,d_hiking,d_gaming,d_clubbing,d_reading,d_tv,d_theater,d_movies,d_concerts,d_music,d_shopping,d_yoga,
+d_interests_correlate,d_expected_happy_with_sd_people,d_expected_num_interested_in_me,d_expected_num_matches,d_guess_prob_liked,d_like
+))
+
+```
+
+
+```{r}
+# Convert b'1' to 1
+speed_dating = speed_dating %>% mutate_at(vars(decision, decision_o, match, gender, race, has_null, race_o, samerace, field, ), function(x) gsub("^b'|'$", "", x))
+
+speed_dating$decision = as.integer(speed_dating$decision)
+speed_dating$decision_o = as.integer(speed_dating$decision_o)
+speed_dating$match = as.factor(as.integer(speed_dating$match))
+
+```
+
+
+
+```{r}
+# Add overall criteria met column
+speed_dating = speed_dating %>% mutate(
+  criteria_o_percent = (pref_o_attractive * attractive_o 
+                        + pref_o_sincere * sinsere_o 
+                        + pref_o_intelligence * intelligence_o 
+                        + pref_o_funny * funny_o 
+                        + pref_o_ambitious * ambitous_o 
+                        + pref_o_shared_interests * shared_interests_o) / 1000,
+  criteria_percent = (attractive_important * attractive_partner 
+                      + sincere_important * sincere_partner 
+                      + intellicence_important * intelligence_partner 
+                      + funny_important * funny_partner 
+                      + ambtition_important * ambition_partner 
+                      + shared_interests_important * shared_interests_partner) / 1000
+)
+
+# Male only frame
+male <- speed_dating %>%
+  filter(gender == "male")
+
+
+# Female only frame
+female <- speed_dating %>%
+  filter(gender == "female")
+
+```
+
+## Matche Percent
+
+```{r}
+sum(speed_dating$match == 1) / dim(speed_dating)[1]
+```
+
+
+
+## Male vs. Female Important Qualities
+
+```{r}
+
+
+combined_pref = data.frame(
+  preference = rep(c("attractive", "sincere", "intelligence", "funny", "ambition", "shared interests"), 2),
+  average = c(
+    mean(na.omit(male$attractive_important)),
+    mean(na.omit(male$sincere_important)), 
+    mean(na.omit(male$intellicence_important)), 
+    mean(na.omit(male$funny_important)), 
+    mean(na.omit(male$ambtition_important)), 
+    mean(na.omit(male$shared_interests_important)),
+    mean(na.omit(female$attractive_important)),
+    mean(na.omit(female$sincere_important)), 
+    mean(na.omit(female$intellicence_important)), 
+    mean(na.omit(female$funny_important)), 
+    mean(na.omit(female$ambtition_important)), 
+    mean(na.omit(female$shared_interests_important))
+    ),
+  gender = c(rep('male',6), rep('female', 6))
+)
+
+ggplot(combined_pref, aes(preference, average, fill = gender)) + 
+  geom_col(position = "dodge") +
+  xlab("Trait") + 
+  ylab("Average %") +
+  ggtitle("Average % for Each Trait")
+
+
+```
+
+
+## Create Training and testing set
+
+```{r,comment=NA}
+index<- sample(dim(speed_dating)[1], round(dim(speed_dating)[1]*0.8))
+train<- speed_dating[index,]
+test<- speed_dating[-index,]
+```
+
+
+## Logistic Regression 
+
+```{r, comment=NA}
+
+mdl = glm(match ~ criteria_o_percent + criteria_percent, test, family = 'binomial')
+
+summary(mdl)$coef
+
+```
+
+
+
+
+## Prediction Accuracy Using Confusion matrix
+
+```{r, comment=NA}
+prob1<-stats::predict(mdl, newdata=test)#  this will result in log odds ratio
+prob1<-stats::predict(mdl, newdata=test, type="response") 
+# `type=response` provides predicted probability 
+
+
+pred1<- rep(0,dim(test)[1]) ## create a zero vector, there are 115 rows  in the training set
+
+pred1[prob1>0.6]=1 ## if predicted probability is more than 60%, we mark that as a survived.
+tab1<-table(pred1, test$match) # confusion matrix
+addmargins(tab1)
+ sum(diag(tab1))/sum(tab1)# 
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
