@@ -26,25 +26,39 @@ d_attractive_important,d_sincere_important,d_intellicence_important,d_funny_impo
 d_attractive,d_sincere,d_intelligence,d_funny,d_ambition,
 d_attractive_partner,d_sincere_partner,d_intelligence_partner,d_funny_partner,d_ambition_partner,d_shared_interests_partner,
 d_sports,d_tvsports,d_exercise,d_dining,d_museums,d_art,d_hiking,d_gaming,d_clubbing,d_reading,d_tv,d_theater,d_movies,d_concerts,d_music,d_shopping,d_yoga,
-d_interests_correlate,d_expected_happy_with_sd_people,d_expected_num_interested_in_me,d_expected_num_matches,d_guess_prob_liked,d_like
+d_interests_correlate,d_expected_happy_with_sd_people,d_expected_num_interested_in_me,d_expected_num_matches,d_guess_prob_liked,d_like,has_null
 ))
 
 ```
 
 
+
+
+
 ```{r}
 # Convert b'1' to 1
-speed_dating = speed_dating %>% mutate_at(vars(decision, decision_o, match, gender, race, has_null, race_o, samerace, field, ), function(x) gsub("^b'|'$", "", x))
+speed_dating = speed_dating %>% mutate_at(vars(decision, decision_o, match, gender, race, race_o, samerace, field, ), function(x) gsub("^b'|'$", "", x))
 
 speed_dating$decision = as.integer(speed_dating$decision)
 speed_dating$decision_o = as.integer(speed_dating$decision_o)
 speed_dating$match = as.factor(as.integer(speed_dating$match))
+speed_dating$samerace = as.factor(speed_dating$samerace)
+speed_dating$race = as.factor(speed_dating$race)
+speed_dating$race_o = as.factor(speed_dating$race_o)
+speed_dating$field = as.factor(speed_dating$field)
+speed_dating$gender = as.factor(speed_dating$gender)
+
 
 ```
 
 
 
 ```{r}
+# Fill in NA values with median for column
+speed_dating = speed_dating %>% mutate(across(c(age, age_o, importance_same_religion, pref_o_attractive, pref_o_sincere, pref_o_intelligence, pref_o_funny, pref_o_ambitious, pref_o_shared_interests, attractive_o, sinsere_o, intelligence_o, funny_o, ambitous_o, shared_interests_o, attractive_important, sincere_important, guess_prob_liked, intellicence_important, funny_important, ambtition_important, shared_interests_important, attractive, sincere, intelligence, funny, ambition, attractive_partner, sincere_partner, intelligence_partner, funny_partner, importance_same_race, ambition_partner,  shared_interests_partner, sports, tvsports, exercise, dining, museums, art, hiking, gaming, clubbing, reading, tv, theater,  movies, concerts, music, shopping, yoga, interests_correlate, expected_happy_with_sd_people, expected_num_interested_in_me, expected_num_matches, like, met), ~replace_na(., median(., na.rm=TRUE))))
+
+
+
 # Add overall criteria met column
 speed_dating = speed_dating %>% mutate(
   criteria_o_percent = (pref_o_attractive * attractive_o 
@@ -72,7 +86,8 @@ female <- speed_dating %>%
 
 ```
 
-## Matche Percent
+
+## Match Percent
 
 ```{r}
 sum(speed_dating$match == 1) / dim(speed_dating)[1]
@@ -114,20 +129,59 @@ ggplot(combined_pref, aes(preference, average, fill = gender)) +
 ```
 
 
+
+
+## Variable Selection
+
+```{r}
+everything_model<-glm(match ~ wave + gender + age + age_o + d_age + race + race_o + 
+    samerace + importance_same_race + importance_same_religion + 
+    pref_o_attractive + pref_o_sincere + pref_o_intelligence + 
+    pref_o_funny + pref_o_ambitious + pref_o_shared_interests + 
+    attractive_o + sinsere_o + intelligence_o + funny_o + ambitous_o + 
+    shared_interests_o + attractive_important + sincere_important + 
+    intellicence_important + funny_important + ambtition_important + 
+    shared_interests_important + attractive + sincere + intelligence + 
+    funny + ambition + attractive_partner + sincere_partner + 
+    intelligence_partner + funny_partner + ambition_partner + 
+    shared_interests_partner + sports + tvsports + exercise + 
+    dining + museums + art + hiking + gaming + clubbing + reading + 
+    tv + theater + movies + concerts + music + shopping + yoga + 
+    interests_correlate + expected_happy_with_sd_people + expected_num_interested_in_me + 
+    expected_num_matches + like + guess_prob_liked + met + criteria_o_percent + criteria_percent, family = "binomial", data=speed_dating)
+stepAIC(everything_model)
+```
+
+
+
 ## Create Training and testing set
 
 ```{r,comment=NA}
+set.seed(1000)
 index<- sample(dim(speed_dating)[1], round(dim(speed_dating)[1]*0.8))
 train<- speed_dating[index,]
 test<- speed_dating[-index,]
 ```
 
 
+
 ## Logistic Regression 
 
 ```{r, comment=NA}
 
-mdl = glm(match ~ criteria_o_percent + criteria_percent, test, family = 'binomial')
+mdl =glm(formula = match ~ d_age + race + race_o + importance_same_religion + 
+    pref_o_attractive + pref_o_sincere + pref_o_ambitious + attractive_o + 
+    sinsere_o + funny_o + ambitous_o + shared_interests_o + attractive_important + 
+    sincere_important + intellicence_important + funny_important + 
+    ambtition_important + shared_interests_important + attractive + 
+    intelligence + attractive_partner + sincere_partner + intelligence_partner + 
+    ambition_partner + tvsports + museums + art + clubbing + 
+    reading + tv + movies + concerts + shopping + expected_num_interested_in_me + 
+    expected_num_matches + like + guess_prob_liked + criteria_o_percent + 
+    criteria_percent, family = "binomial", data = speed_dating)
+
+
+
 
 summary(mdl)$coef
 
@@ -146,7 +200,7 @@ prob1<-stats::predict(mdl, newdata=test, type="response")
 
 pred1<- rep(0,dim(test)[1]) ## create a zero vector, there are 115 rows  in the training set
 
-pred1[prob1>0.6]=1 ## if predicted probability is more than 60%, we mark that as a survived.
+pred1[prob1>0.4]=1 ## if predicted probability is more than 60%, we mark that as a survived.
 tab1<-table(pred1, test$match) # confusion matrix
 addmargins(tab1)
  sum(diag(tab1))/sum(tab1)# 
@@ -155,10 +209,17 @@ addmargins(tab1)
 
 
 
+## Visualize the Logistic Model
 
+```{r, comment=NA}
+#data<-na.omit(data.frame(train, prob))
+data=broom::augment(mdl,type.predict = "response")
+gitter<-ggplot(data, aes(x=criteria_percent))+
+ #geom_jitter(aes(y=Survived))+
+  geom_smooth( aes(y=.fitted))
+gitter
 
-
-
+```
 
 
 
