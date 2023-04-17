@@ -194,6 +194,7 @@ sum(female_with_desireable_mate$decision == 1) / dim(female_with_desireable_mate
 Across the entire data set, approximately 16.47% of dates resulted in a match. While men are likely to want to date their partner nearly 50% of the time, women are much less so at about 37%. MIKE TO WRITE SENTENCE ABOUT DESIRABLE MATE PERCENTAGES
 
 ```{r}
+# Bar chart of important features
 ggplot(male, aes(most_important_category)) +
   geom_bar(fill = "#0073C2FF")  +
   ggtitle("Most Important Feature to Men")
