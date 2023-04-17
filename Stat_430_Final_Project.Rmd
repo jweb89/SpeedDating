@@ -1,0 +1,598 @@
+---
+title: "Speed Dating Project"
+author: "Mike Derkowski, Jared Lee, and Josh Weber"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(ggplot2)
+library(tidyverse)
+library(car)
+library(corrplot)
+library(Hmisc)
+library(MASS)
+library(lmtest)
+library(pROC)
+library(Metrics)
+```
+
+```{r}
+# Data Read-In
+speed_dating = read.csv("speeddating.csv", header = T)
+
+# Removal of unnecessary columns
+speed_dating = subset(speed_dating, select = -c(d_d_age, d_importance_same_race, 
+d_importance_same_religion, d_pref_o_attractive,d_pref_o_sincere,d_pref_o_intelligence,
+d_pref_o_funny,d_pref_o_ambitious,d_pref_o_shared_interests, d_attractive_o,d_sinsere_o,
+d_intelligence_o,d_funny_o,d_ambitous_o,d_shared_interests_o,d_attractive_important,
+d_sincere_important,d_intellicence_important,d_funny_important,d_ambtition_important,
+d_shared_interests_important,d_attractive,d_sincere,d_intelligence,d_funny,d_ambition,
+d_attractive_partner,d_sincere_partner,d_intelligence_partner,d_funny_partner,
+d_ambition_partner,d_shared_interests_partner,d_sports,d_tvsports,d_exercise,
+d_dining,d_museums,d_art,d_hiking,d_gaming,d_clubbing,d_reading,d_tv,d_theater,
+d_movies,d_concerts,d_music,d_shopping,d_yoga,d_interests_correlate,
+d_expected_happy_with_sd_people,d_expected_num_interested_in_me,
+d_expected_num_matches,d_guess_prob_liked,d_like,has_null
+))
+
+# Conversion of b'1' to 1 and b'0' to 0
+speed_dating = speed_dating %>% mutate_at(vars(decision, decision_o, match, 
+                                               gender, race, race_o, samerace, field, ), 
+                                          function(x) gsub("^b'|'$", "", x))
+
+# Conversion of variables to factors and integers
+speed_dating$decision = as.integer(speed_dating$decision)
+speed_dating$decision_o = as.integer(speed_dating$decision_o)
+speed_dating$match = as.factor(as.integer(speed_dating$match))
+speed_dating$samerace = as.factor(speed_dating$samerace)
+speed_dating$race = as.factor(speed_dating$race)
+speed_dating$race_o = as.factor(speed_dating$race_o)
+speed_dating$field = as.factor(speed_dating$field)
+speed_dating$gender = as.factor(speed_dating$gender)
+
+# Imputation of NA values for column medians
+speed_dating = speed_dating %>% mutate(across(c(age, age_o, importance_same_religion,
+pref_o_attractive,pref_o_sincere, pref_o_intelligence, pref_o_funny, pref_o_ambitious, 
+pref_o_shared_interests, attractive_o, sinsere_o, intelligence_o, funny_o, ambitous_o, 
+shared_interests_o, attractive_important, sincere_important, guess_prob_liked, 
+intellicence_important, funny_important, ambtition_important, shared_interests_important,
+attractive, sincere, intelligence, funny, ambition, attractive_partner, sincere_partner, 
+intelligence_partner, funny_partner, importance_same_race, ambition_partner,  
+shared_interests_partner, sports, tvsports, exercise, dining, museums, art, hiking, 
+gaming, clubbing, reading, tv, theater,  movies, concerts, music, shopping, yoga, 
+interests_correlate, expected_happy_with_sd_people, expected_num_interested_in_me, 
+expected_num_matches, like, met),~replace_na(., median(., na.rm=TRUE))))
+
+# Data Mutations
+
+# Creation of most important category column
+speed_dating$most_important_category = 
+  str_remove(colnames(speed_dating[,25:30])[max.col(speed_dating[,25:30], 
+                                                    ties.method="first")],"_important")
+
+# Creation of  maximum column index
+maximum_col_index = as.integer(max.col(speed_dating[,25:30],ties.method="first"))
+
+# Creation of overall criteria percent met columns
+speed_dating = speed_dating %>% mutate(
+  criteria_o_percent = (pref_o_attractive * attractive_o 
+                        + pref_o_sincere * sinsere_o 
+                        + pref_o_intelligence * intelligence_o 
+                        + pref_o_funny * funny_o 
+                        + pref_o_ambitious * ambitous_o 
+                        + pref_o_shared_interests * shared_interests_o) / 1000,
+  criteria_percent = (attractive_important * attractive_partner 
+                      + sincere_important * sincere_partner 
+                      + intellicence_important * intelligence_partner 
+                      + funny_important * funny_partner 
+                      + ambtition_important * ambition_partner 
+                      + shared_interests_important * shared_interests_partner) / 1000
+)
+
+
+# Creation of sub data-frame with most important category score
+speed_dating_enhanced <- speed_dating %>%
+  mutate(most_important_cat_score = case_when(maximum_col_index == 1 ~ attractive_partner,
+  maximum_col_index == 2 ~ sincere_partner,
+  maximum_col_index == 3 ~ intelligence_partner,
+  maximum_col_index == 4 ~ funny_partner,
+  maximum_col_index == 5 ~ ambition_partner,
+  maximum_col_index == 6 ~ shared_interests_partner))
+
+# Male only data-frame
+male <- speed_dating %>%
+  filter(gender == "male")
+
+# Female only data-frame
+female <- speed_dating %>%
+  filter(gender == "female")
+
+# Match only frame
+match <- speed_dating %>%
+  filter(match == "1")
+
+# No Match only frame
+nomatch <- speed_dating %>%
+  filter(match == "0")
+
+# Asian/Pacific Islander/Asian-American Data Frame
+APIAA = speed_dating %>%
+  filter(race == "Asian/Pacific Islander/Asian-American")
+
+# European/Caucasian-American Data Frame
+ECA = speed_dating %>%
+  filter(race == "European/Caucasian-American")
+
+# Latino/Hispanic American Data Frame
+LHA = speed_dating %>%
+  filter(race == "Latino/Hispanic American")
+
+# Black/African American Data Frame
+BAA = speed_dating %>%
+  filter(race == "Black/African American")
+
+# Speed dating frame with "other" and "?" race categories filtered out
+speed_dating_race = speed_dating %>%
+  filter(race %in% c("Asian/Pacific Islander/Asian-American", 
+                     "European/Caucasian-American", 
+                     "Latino/Hispanic American", "Black/African American"))
+
+# Data frame of males whose most important category score was greater than 8
+male_with_desireable_mate <- speed_dating_enhanced %>%
+  filter(gender == "male") %>%
+  filter(most_important_cat_score > 8)
+
+# Data frame of females whose most important category score was greater than 8
+female_with_desireable_mate <- speed_dating_enhanced %>%
+  filter(gender == "female") %>%
+  filter(most_important_cat_score > 8)
+```
+
+# Introduction
+
+Speed dating is a popular social event that has become increasingly popular over the years. It is a structured way for singles to meet and connect with many potential partners in a short amount of time. During a speed dating event, participants typically rotate through a series of short interactions, spending a few minutes chatting with each person before moving on to the next. This format allows singles to quickly assess their compatibility with a variety of individuals, and potentially find someone with whom they share a mutual attraction. The concept of speed dating has been adapted to various age groups, interests, and orientations, making it a versatile and exciting way to meet new people.
+
+One of the first documented uses of speed dating was with young Orthodox $adults^1$.  Usually, Orthodox boys and girls were separated at school and had very little chance of social interaction with the opposite sex.  Matchmakers were intermediaries that helped to get compatible dates together by holding events where the participants could meet a variety of potential mates and disclose to the matchmaker in private that they were interested in the other person.  The matchmaker would then arrange for the young adults to meet.
+
+One of the main themes of speed dating was to allow the participants to see a deeper dimension of the people they were meeting by giving a bit of time for conversation to $develop^2$.  This was to avoid the observation that traditionally, only “Attractive women and outgoing men” have success in $dating^1$.The Kaggle data set that we used was collected between 2002 and 2004.
+
+## Research Question 1: Does every Person has a single desired characteristic they are looking for, and is this the determining factor in offering to date?
+
+The main idea behind this was to further examine the idea that men simply look for the most attractive women, and women are likely to have a more balanced approach to their desired dates.  In this case, we arrived at this as a research topic through intuition of the dataset.  In examining the data, we could see differences in men and women empirically.  Looking at the data closer led to the possibility that the genders look for different characteristics when choosing a date.
+
+## Research Question 2: Knowing the complexity of human nature, should desired characteristics be treated more holistically?
+
+The idea that individuals are influenced by a single characteristic is unrealistic.  People have a variety of characteristics they look for, and each of these needs to be part of the overall decision people make when they are looking for a date.
+
+## Research Question 3: What impact does race have on speed dating expectations, preferences, and outcomes?
+
+Whether or not race plays a significant role in speed dating is an interesting thought. With such a wide variety of cultures present almost everywhere in the world today, have what is important to individuals merged together, or do distinct differences exist?
+
+# Data Set Description
+
+This is where we will right about the data set, where it is from, and the paragraphs of variables.
+
+## Exploratory Data Analysis: Descriptive Statistics and Visualizations
+
+This is where the tables of variables will be placed.
+
+```{r}
+sum(speed_dating$match == 1) / dim(speed_dating)[1] * 100
+sum(male$decision == 1) / dim(male)[1] * 100
+sum(female$decision == 1) / dim(female)[1] * 100
+
+sum(male_with_desireable_mate$decision == 1) / dim(male_with_desireable_mate)[1] * 100
+sum(female_with_desireable_mate$decision == 1) / dim(female_with_desireable_mate)[1] * 100
+
+```
+
+Across the entire data set, approximately 16.47% of dates resulted in a match. While men are likely to want to date their partner nearly 50% of the time, women are much less so at about 37%. MIKE TO WRITE SENTENCE ABOUT DESIRABLE MATE PERCENTAGES
+
+```{r}
+ggplot(male, aes(most_important_category)) +
+  geom_bar(fill = "#0073C2FF")  +
+  ggtitle("Most Important Feature to Men")
+
+ggplot(female, aes(most_important_category)) +
+  geom_bar(fill = "#9c1121")   +
+  ggtitle("Most Important Feature to Women")
+```
+
+MIKE TO PROVIDE DISCUSSION OF CHARTS
+
+```{r}
+combined_pref = data.frame(
+  preference = rep(c("attractive", "sincere", "intelligence", "funny", "ambition", "shared interests"), 2),
+  average = c(
+    mean(na.omit(male$attractive_important)),
+    mean(na.omit(male$sincere_important)), 
+    mean(na.omit(male$intellicence_important)), 
+    mean(na.omit(male$funny_important)), 
+    mean(na.omit(male$ambtition_important)), 
+    mean(na.omit(male$shared_interests_important)),
+    mean(na.omit(female$attractive_important)),
+    mean(na.omit(female$sincere_important)), 
+    mean(na.omit(female$intellicence_important)), 
+    mean(na.omit(female$funny_important)), 
+    mean(na.omit(female$ambtition_important)), 
+    mean(na.omit(female$shared_interests_important))
+    ),
+  gender = c(rep('male',6), rep('female', 6))
+)
+
+ggplot(combined_pref, aes(preference, average, fill = gender)) + 
+  geom_col(position = "dodge") +
+  xlab("Trait") + 
+  ylab("Average %") +
+  ggtitle("Average % for Each Trait")
+```
+
+The above table shows the average percentage of importance for six traits, colored by men and women. MIKE OR JOSH DISCUSS THE GRAPH WHICHEVER ONE OF YOUR REFERS TO THE INFORMATION
+
+```{r}
+race_traits = data.frame(
+  traits = rep(c("attractive", "sincere", "intelligence", "funny", "ambition", "shared interests"), 4),
+  average = c(
+    mean(na.omit(APIAA$attractive_important)),
+    mean(na.omit(APIAA$sincere_important)), 
+    mean(na.omit(APIAA$intellicence_important)), 
+    mean(na.omit(APIAA$funny_important)), 
+    mean(na.omit(APIAA$ambtition_important)), 
+    mean(na.omit(APIAA$shared_interests_important)),
+    mean(na.omit(ECA$attractive_important)),
+    mean(na.omit(ECA$sincere_important)), 
+    mean(na.omit(ECA$intellicence_important)), 
+    mean(na.omit(ECA$funny_important)), 
+    mean(na.omit(ECA$ambtition_important)), 
+    mean(na.omit(ECA$shared_interests_important)),
+    mean(na.omit(LHA$attractive_important)),
+    mean(na.omit(LHA$sincere_important)), 
+    mean(na.omit(LHA$intellicence_important)), 
+    mean(na.omit(LHA$funny_important)), 
+    mean(na.omit(LHA$ambtition_important)), 
+    mean(na.omit(LHA$shared_interests_important)),
+    mean(na.omit(BAA$attractive_important)),
+    mean(na.omit(BAA$sincere_important)), 
+    mean(na.omit(BAA$intellicence_important)), 
+    mean(na.omit(BAA$funny_important)), 
+    mean(na.omit(BAA$ambtition_important)), 
+    mean(na.omit(BAA$shared_interests_important))),
+    
+race = c(rep('APIAA',6), rep('ECA', 6), rep("LHA", 6), rep("BAA", 6))    
+    )
+
+ggplot(race_traits, aes(traits, average, fill = race)) +
+  geom_col(position = "dodge") +
+  xlab("Traits") +
+  ylab("Average") +
+  ggtitle("Average Trait Importance by Race") +
+  scale_x_discrete(guide = guide_axis(n.dodge = 2))
+
+```
+
+The graph located above displays the average percentage of importance allocated to different traits, colored by race. In order to properly understand the graph, it is important to remember than when rating the importance of a trait, a total of 100 percentage points could be distributed across all six options. This means that for each participant in the data set, the total value of the six traits listed on the x-axis add up to 100. I will also remind reader that APIAA stands for Asian/Pacific-Islander/Asian-American, BAA stands for Black/African-American, ECA stands for European/Caucasian-American, and LHA stands for Latino/Hispanic-American.
+
+In terms of analysis, the chart above offers many findings which may of interest to our audience. Beginning with the ambition trait, we can see that both APIAA and BAA participants scored higher on average than the other two groups. This indicates that these participants are more concerned with the ambition of their partners, which may be a result of systematic oppression which their races have faced, and the difficulty in finding a profitable career which comes with it. The attractive trait is ranked almost the most important for every race, other than LHA participants. This shows that although races do have differences in the importance of a partner's traits, the basic desire to have an attractive mate exists across all groups. There is nothing of much interest in regards to the funny trait, other than the fact that ECA individuals value it most heavily. The intelligence trait definitely sparks interest, as LHA observations have given it the most importance on average, relative to the other groups, and APIAA observations have given it the least. This finding may surprise the audience, as intelligence and academia in general are heavily emphasized in Asian cultures. The shared interests trait is among the lowest in terms of average importance across all races, but there is a noticeably larger value for APIAA participants. One may attribute this to the more dependent, less individualized culture which exists in many Asian communities. Lastly, looking at the sincerity trait, both APIAA and LHA individuals have higher average importance values than BAA and ECA individuals. This may also be a result of the culture which exists among Asian and Latino cultures, where co-existence among larger groups is more common.
+
+While some of these possible reasons may be in agreement with our readers, and some may not, it is important to remember that they are all speculation, at the end of the day, and further research would be of value.
+
+```{r}
+race_expected = data.frame(preference = c("Same Race Importance", "Same Race Importance", "Same Race Importance", "Same Race Importance", "Same Religion Importance", "Same Religion Importance", "Same Religion Importance", "Same Religion Importance", "Expected Happy w/ SD", "Expected Happy w/ SD", "Expected Happy w/ SD", "Expected Happy w/ SD", "Expected Num. Interested", "Expected Num. Interested", "Expected Num. Interested", "Expected Num. Interested", "Expected Num. Matches","Expected Num. Matches", "Expected Num. Matches", "Expected Num. Matches" ), race = rep(c("APIAA", "ECA", "LHA", "BAA"), 5), 
+average = c(
+mean(na.omit(APIAA$importance_same_race)),
+mean(na.omit(ECA$importance_same_race)),
+mean(na.omit(LHA$importance_same_race)),
+mean(na.omit(BAA$importance_same_race)),
+mean(na.omit(APIAA$importance_same_religion)),
+mean(na.omit(ECA$importance_same_religion)),
+mean(na.omit(LHA$importance_same_religion)),
+mean(na.omit(BAA$importance_same_religion)),
+mean(na.omit(APIAA$expected_happy_with_sd_people)),
+mean(na.omit(ECA$expected_happy_with_sd_people)),
+mean(na.omit(LHA$expected_happy_with_sd_people)),
+mean(na.omit(BAA$expected_happy_with_sd_people)),
+mean(na.omit(APIAA$expected_num_interested_in_me)),
+mean(na.omit(ECA$expected_num_interested_in_me)),
+mean(na.omit(LHA$expected_num_interested_in_me)),
+mean(na.omit(BAA$expected_num_interested_in_me)),
+mean(na.omit(APIAA$expected_num_matches)),
+mean(na.omit(ECA$expected_num_matches)),
+mean(na.omit(LHA$expected_num_matches)),
+mean(na.omit(BAA$expected_num_matches)))
+)
+
+ggplot(race_expected, aes(preference, average, fill = race)) +
+  geom_col(position = "dodge") +
+  xlab("Preference") +
+  ylab("Average") +
+  ggtitle("Average Importance and Expectations by Race") +
+  scale_x_discrete(guide = guide_axis(n.dodge = 2))
+
+```
+
+The chart above is very similar to the previous chart, and interpretation will be kept to a minimum. By far the most interesting statistic is that ECA individuals rank the importance of their partner being of the same race and same religion the highest. This is very relevant in the modern age, where inclusive and diverse cultures are highly desired. It appears that ECA individuals may be less accepting of others than they make it seem, but this also could be a residual effect of the past. I would guess that these numbers will continue to grow closer together amongst all races over time.
+
+```{r}
+numeric_data<-select_if(speed_dating, is.numeric)
+cor_df = cor(numeric_data, use = "pairwise.complete.obs")
+cor_df <- as.data.frame(as.table(cor_df))
+cor_df[cor_df == 1] = NA
+cor_df = na.omit(cor_df)
+cor_df <- subset(cor_df, abs(Freq) > 0.7)
+cor_df <- cor_df[order(-abs(cor_df$Freq)),]
+mtx_cor_df <- reshape2::acast(cor_df, Var1~Var2, value.var="Freq")
+corrplot(mtx_cor_df, is.corr=FALSE, tl.col="black", na.label=" ")
+```
+
+JARED WRITE HERE
+
+# Statistical Analysis and Discussion
+
+## Does every Person has a single desired characteristic they are looking for, and is this the determining factor in offering to date?
+
+MIKE THIS IS WHERE YOUR STUFF GOES
+
+## Knowing the complexity of human nature, should desired characteristics be treated more holistically?
+
+JOSH THIS IS WHERE YOUR STUFF GOES
+
+## What impact does race have on speed dating expectations, preferences, and outcomes?
+
+In this section, we have set out to build regression models for participants of each race, and to compare our results. Before discussing each one individually, we would like to mention some general information which will be relevant to all of the following models. First and foremost, we have strategically chosen variables which may or may not be included in the models, based on interest and relevance. As has been noted in the data set description, each observation represents both a participant, and their partner, during the speed dating event. While having all of this information is great, we are seeking to discover how the effect of variables change based on the participant's race. Therefore, we are not interested in the smaller details of the partner, but only those of the participant. The following predictor variables have been included in all of the initial models: `gender`, `age`, `samerace`, `importance_same_race`,`importance_same_religion`, `attractive_important`, `sincere_important`, `intellicence_important`, `funny_important`, `ambtition_important`, `expected_happy_with_sd_people`, `expected_num_matches`, `interests_correlate`, `criteria_percent`. The response variable we have chosen is `decision`, which represents whether or not the participant would like to match, not whether a match will actually occur. The reasoning for this is, once again, that we are not too concerned with information about the partner, but such information may have a large impact on the partner's decision, and therefore the match. In order to avoid such a dilemma, we have chosen to simply look at the decision of the participant. The aggregate `interests_correlate` and `criteria_percent` provide a bit of information into the partner, without including many variables individually.
+
+We would also like to discuss the general steps taken in building a logistic regression model for each race, so as to avoid explaining the steps individually. Our first step was to utilize separate data frames filtered to only include individuals of a certain race, and split them into training and testing sets. This was done using a 70/30 split, and random sampling of the rows, resulting in training sets consisting of 70% of the data, and testing sets resulting in 30%. Next, we built a logistic regression model using all of the variables mentioned in the previous paragraph, with the binary `decision` variable as our output. We then checked the variance inflation factors for each of the regressors, to ensure no extreme multicollinearity was present. The `stepAIC` function was then used to find the best combination of predictor variables, which will have the lowest Akaike Information Criterion measure, or AIC. A lower AIC value represents a better balance between the model's goodness-of-fit and model simplicity. A likelihood ratio test was then performed to determine whether the nested model, chosen by the `stepAIC` function, was a better choice than the initial model, which in all cases was true. 
+
+Receiver Operating Characteristic curves were then used to visualize the trade-off between false positives and true positives for each model, and using the ROC curve, an "optimal" probability threshold was found. The easiest way to think of this is that a logistic regression model gives outputs which indicate the probability of the response variable being a 1. In our case, this meant the probability of the `decision` variable being a yes. Once these probabilities have been generated, choosing where the cut-off lies to round up to 1 or down to 0 depends on the research itself. The obvious answer would be to use .5 as a threshold, however, this is not always the best when data is unbalanced. Additionally, either false positives or false negatives may be of greater importance in certain cases, such as when predicting whether a patient has a disease or not. While giving the patient the medicine when they do not really have the disease may not cause much harm (false positive), not giving the patient medicine when they do have the disease could be deadly (false negative). Last but not least, a confusion matrix was created to determine the accuracy of the final model for each race. While this value is certainly important, and helps to determine the accuracy of model coefficients, our goal is mostly look at the differences between models.
+
+
+### Asian, Pacific Islander, and Asian-American Regression
+
+```{r}
+set.seed(123)
+indexAPIAA = sample(dim(APIAA)[1], round(dim(APIAA)[1]*0.7))
+trainAPIAA = APIAA[indexAPIAA, ]
+testAPIAA = APIAA[-indexAPIAA, ]
+
+APIAAmodel = glm(decision~gender+age+samerace+importance_same_race+importance_same_religion+attractive_important+sincere_important+intellicence_important+funny_important+ambtition_important+expected_happy_with_sd_people+expected_num_matches+interests_correlate+criteria_percent, family = binomial, data = trainAPIAA)
+
+summary(APIAAmodel)
+vif(APIAAmodel)
+
+stepAIC(APIAAmodel)
+
+APIAAmodelAIC = glm(formula = decision ~ gender + age + importance_same_religion + 
+    attractive_important + sincere_important + intellicence_important + 
+    funny_important + ambtition_important + expected_happy_with_sd_people + 
+    expected_num_matches + criteria_percent, family = binomial, 
+    data = trainAPIAA)
+
+summary(APIAAmodelAIC)
+vif(APIAAmodelAIC)
+
+logLik(APIAAmodelAIC); logLik(APIAAmodel);AIC(APIAAmodelAIC, APIAAmodel)
+
+G = -2*(-712.1913)- (-2*(-711.4279))
+pchisq(G, df=3, lower.tail = FALSE)
+
+prob1 = stats::predict(APIAAmodelAIC, newdata=testAPIAA, type="response")
+
+test_roc = roc(testAPIAA$decision ~ prob1, plot = TRUE, print.auc = TRUE)
+coords(test_roc, "best", ret = "threshold")
+
+pred1 = rep(0,dim(testAPIAA)[1]) 
+pred1[prob1>0.4755654]=1 
+tab1 = table(pred1, testAPIAA$match)
+addmargins(tab1)
+sum(diag(tab1))/sum(tab1)
+
+sum(APIAA$decision == 0)/dim(APIAA)[1]
+```
+
+The final model developed for Asian/Pasicific-Islander/Asian-American participants is as follows: 
+
+log($P(decision = 1)/(1 - P(decision = 0))$) = -3.58 + 0.46(gendermale) + 0.06(age) - 0.14(importance_same_religion) - 0.06(attractive_important) - 0.04(sincere_important) - 0.04(intellicence_important) - 0.06(funny_important) - 0.07(ambtition_important) - 0.08(expected_happy_with_sd_people) + 0.32(expected_num_matches) + 9.39(criteria_percent)
+
+Based on the testing data, this model is accurate at predicting whether or not an individual of the APIAA race will decide they want to match or not 58.49% of the time. Of the decisions in the APIAA data set that were 0, the model incorrectly predicted a decision value of 1 about 44% of the time. Of the decisions in the APIAA data set that were 1, the model incorrectly predicted a decision value of 0 about 25% of the time.
+
+In order to interpret the model coefficients, we must first exponentiate both sides because the response variable is currently in the log format. This will than give us the following interpretations, all else held constant:
+
++ When the participant is male, the odds of deciding yes are expected to increase by 58%, relative to females.
++ For every one year increase in `age`, the odds of deciding yes are expected to increase by 6%.
++ For every one unit increase in the rating of `importance_same_religion`, the odds of deciding yes are expected to decrease by 13%.
++ For every one unit increase in the rating of `attractive_important`, the odds of deciding yes are expected to decrease by 6%.
++ For every one unit increase in the rating of `sincere_important`, the odds of deciding yes are expected to decrease by 4%.
++ For every one unit increase in the rating of `intellicence_important`, the odds of deciding yes are expected to decrease by 4%.
++ For every one unit increase in the rating of `funny_important`, the odds of deciding yes are expected to decrease by 6%.
++ For every one unit increase in the rating of `ambtition_important`, the odds of deciding yes are expected to decrease by 7%.
++ For every one unit increase in the rating of `expected_happy_with_sd_people`, the odds of deciding yes are expected to decrease by 8%.
++ For every one match increase in `expected_num_matches`, the odds of deciding yes are expected to increase by 38%.
++ For every one hundredth increase in `criteria_percent`, the odds of deciding yes are expected to increase by 10%
+
+
+### European and Caucasian-American Regression
+
+```{r}
+set.seed(123)
+indexECA = sample(dim(ECA)[1], round(dim(ECA)[1]*0.7))
+trainECA = ECA[indexECA, ]
+testECA = ECA[-indexECA, ]
+
+ECAmodel =  glm(decision~gender+age+samerace+importance_same_race+importance_same_religion+attractive_important+sincere_important+intellicence_important+funny_important+ambtition_important+expected_happy_with_sd_people+expected_num_matches+interests_correlate+criteria_percent, family = binomial, data = trainECA)
+
+summary(ECAmodel)
+vif(ECAmodel)
+
+stepAIC(ECAmodel)
+
+ECAmodelAIC = glm(formula = decision ~ gender + samerace + importance_same_religion + 
+    attractive_important + sincere_important + intellicence_important + 
+    funny_important + ambtition_important + expected_happy_with_sd_people + 
+    expected_num_matches + interests_correlate + criteria_percent, 
+    family = binomial, data = trainECA)
+
+summary(ECAmodelAIC)
+vif(ECAmodelAIC)
+
+logLik(ECAmodelAIC); logLik(ECAmodel);AIC(ECAmodelAIC, ECAmodel)
+
+G = -2*(-1706.482)- (-2*(-1704.785))
+pchisq(G, df=2, lower.tail = FALSE)
+
+prob1 = stats::predict(ECAmodelAIC, newdata=testECA, type="response")
+
+test_roc = roc(testECA$decision ~ prob1, plot = TRUE, print.auc = TRUE)
+coords(test_roc, "best", ret = "threshold")
+
+pred1 = rep(0,dim(testECA)[1]) 
+pred1[prob1>0.3165381	]=1 
+tab1 = table(pred1, testECA$match)
+addmargins(tab1)
+sum(diag(tab1))/sum(tab1)
+```
+
+The final model developed for European/Caucasian-American participants is as follows:
+
+log($P(decision = 1)/(1 - P(decision = 0))$) = -5.21 + 0.84(gendermale) + 0.47(samerace1) - 0.03(importance_same_religion) - 0.04(attractive_important) - 0.04(sincere_important) - 0.02(intellicence_important) - 0.02(funny_important) - 0.05(ambtition_important) - 0.07(expected_happy_with_sd_people) + 0.18(expected_num_matches) - 0.30(interests_correlate) + 9.76(criteria_percent)
+
+Based on the testing data, this model is accurate at predicting whether or not an individual of the ECA race will decide they want to match or not 57.33% of the time. Of the decisions in the ECA data set that were 0, the model incorrectly predicted a decision value of 1 about 49% of the time. Of the decisions in the ECA data set that were 1, the model incorrectly predicted a decision value of 0 about 13% of the time.
+
+Else else held constant, the coefficients can be interpreted as such
+
++ When the participant is male, the odds of deciding yes are expected to increase by 132%, relative to females.
++ When the participant is of the same race as their partner, the odds of deciding yes are expected to increase by 60%, relative to non-similar races.
++ For every one unit increase in the rating of `importance_same_religion`, the odds of deciding yes are expected to decrease by 3%.
++ For every one unit increase in the rating of `attractive_important`, the odds of deciding yes are expected to decrease by 4%.
++ For every one unit increase in the rating of `sincere_important`, the odds of deciding yes are expected to decrease by 4%.
++ For every one unit increase in the rating of `intellicence_important`, the odds of deciding yes are expected to decrease by 2%.
++ For every one unit increase in the rating of `funny_important`, the odds of deciding yes are expected to decrease by 2%.
++ For every one unit increase in the rating of `ambtition_important`, the odds of deciding yes are expected to decrease by 5%.
++ For every one unit increase in the rating of `expected_happy_with_sd_people`, the odds of deciding yes are expected to decrease by 7%.
++ For every one match increase in `expected_num_matches`, the odds of deciding yes are expected to increase by 20%.
++ For every one hundredth increase in `interests_correlate`, the odds of deciding yes are expected to decrease by 26%
++ For every one hundredth increase in `criteria_percent`, the odds of deciding yes are expected to increase by 10%
+
+### Black and African-American Regression
+
+```{r}
+set.seed(123)
+indexBAA = sample(dim(BAA)[1], round(dim(BAA)[1]*0.7))
+trainBAA = BAA[indexBAA, ]
+testBAA = BAA[-indexBAA, ]
+
+BAAmodel =  glm(decision~gender+age+samerace+importance_same_race+importance_same_religion+attractive_important+sincere_important+intellicence_important+funny_important+ambtition_important+expected_happy_with_sd_people+expected_num_matches+interests_correlate+criteria_percent, family = binomial, data = trainBAA)
+
+summary(BAAmodel)
+vif(BAAmodel)
+
+stepAIC(BAAmodel)
+
+BAAmodelAIC = glm(formula = decision ~ importance_same_race + importance_same_religion + 
+    sincere_important + expected_happy_with_sd_people + expected_num_matches + 
+    criteria_percent, family = binomial, data = trainBAA)
+
+summary(BAAmodelAIC)
+vif(BAAmodelAIC)
+
+logLik(BAAmodelAIC); logLik(BAAmodel);AIC(BAAmodelAIC, BAAmodel)
+
+G = -2*(-152.2891)- (-2*(-148.6948))
+pchisq(G, df=8, lower.tail = FALSE)
+
+prob1 = stats::predict(BAAmodelAIC, newdata=testBAA, type="response")
+
+test_roc = roc(testBAA$decision ~ prob1, plot = TRUE, print.auc = TRUE)
+coords(test_roc, "best", ret = "threshold")
+
+pred1 = rep(0,dim(testBAA)[1]) 
+pred1[prob1>0.5156481]=1 
+tab1 = table(pred1, testBAA$match)
+addmargins(tab1)
+sum(diag(tab1))/sum(tab1)
+```
+
+
+The final model developed for Black/African-American participants is as follows:
+
+log($P(decision = 1)/(1 - P(decision = 0))$) = -6.26 - 0.31(importance_same_race) + 0.23 (importance_same_religion) - 0.07(sincere_important) - 0.17(expected_happy_with_sd_people) + 0.30(expected_num_matches) + 10.57(criteria_percent)
+
+Based on the testing data, this model is accurate at predicting whether or not an individual of the BAA race will decide they want to match or not 59.52% of the time. Of the decisions in the BAA data set that were 0, the model incorrectly predicted a decision value of 1 about 47% of the time. Of the decisions in the BAA data set that were 1, the model incorrectly predicted a decision value of 0 about 17% of the time.
+
+Else else held constant, the coefficients can be interpreted as such
+
++ For every one unit increase in the rating of `importance_same_race`, the odds of deciding yes are expected to decrease by 27%.
++ For every one unit increase in the rating of `importance_same_religion`, the odds of deciding yes are expected to increase by 26%.
++ For every one unit increase in the rating of `sincere_important`, the odds of deciding yes are expected to decrease by 7%.
++ For every one unit increase in the rating of `expected_happy_with_sd_people`, the odds of deciding yes are expected to decrease by 16%.
++ For every one match increase in `expected_num_matches`, the odds of deciding yes are expected to increase by 35%.
++ For every one hundredth increase in `criteria_percent`, the odds of deciding yes are expected to increase by 11%
+
+### Latino and Hispanic-American Regression
+
+```{r}
+set.seed(123)
+indexLHA = sample(dim(LHA)[1], round(dim(LHA)[1]*0.7))
+trainLHA = LHA[indexLHA, ]
+testLHA = LHA[-indexLHA, ]
+
+LHAmodel =  glm(decision~gender+age+samerace+importance_same_race+importance_same_religion+attractive_important+sincere_important+intellicence_important+funny_important+ambtition_important+expected_happy_with_sd_people+expected_num_matches+interests_correlate+criteria_percent, family = binomial, data = trainLHA)
+
+summary(LHAmodel)
+vif(LHAmodel)
+
+stepAIC(LHAmodel)
+
+LHAmodelAIC = glm(formula = decision ~ importance_same_religion + attractive_important + 
+    sincere_important + funny_important + ambtition_important + 
+    expected_happy_with_sd_people + expected_num_matches + criteria_percent, 
+    family = binomial, data = trainLHA)
+
+summary(LHAmodelAIC)
+vif(LHAmodelAIC)
+
+logLik(LHAmodelAIC); logLik(LHAmodel);AIC(LHAmodelAIC, LHAmodel)
+
+G = -2*(-217.9301)- (-2*(-216.1475))
+pchisq(G, df=6, lower.tail = FALSE)
+
+prob1 = stats::predict(LHAmodelAIC, newdata=testLHA, type="response")
+
+test_roc = roc(testLHA$decision ~ prob1, plot = TRUE, print.auc = TRUE)
+coords(test_roc, "best", ret = "threshold")
+
+pred1 = rep(0,dim(testLHA)[1]) 
+pred1[prob1>0.4576358]=1 
+tab1 = table(pred1, testLHA$match)
+addmargins(tab1)
+sum(diag(tab1))/sum(tab1)
+```
+
+The final model developed for Latino/Hispanic-American participants is as follows:
+
+log($P(decision = 1)/(1 - P(decision = 0))$) = -3.48 - 0.12 (importance_same_religion) - 0.07(attractive_important) - 0.09(sincere_important) - 0.07(funny_important) - 0.04(ambtition_important) - 0.13(expected_happy_with_sd_people) + 0.08(expected_num_matches) + 12.86(criteria_percent)
+
+Based on the testing data, this model is accurate at predicting whether or not an individual of the LHA race will decide they want to match or not 65.83% of the time. Of the decisions in the LHA data set that were 0, the model incorrectly predicted a decision value of 1 about 38% of the time. Of the decisions in the LHA data set that were 1, the model incorrectly predicted a decision value of 0 about 19% of the time.
+
+Else else held constant, the coefficients can be interpreted as such
+
++ For every one unit increase in the rating of `importance_same_religion`, the odds of deciding yes are expected to decrease by 11%.
++ For every one unit increase in the rating of `attractive_important`, the odds of deciding yes are expected to decrease by 7%.
++ For every one unit increase in the rating of `sincere_important`, the odds of deciding yes are expected to decrease by 9%.
++ For every one unit increase in the rating of `funny_important`, the odds of deciding yes are expected to decrease by 7%.
++ For every one unit increase in the rating of `ambtition_important`, the odds of deciding yes are expected to decrease by 4%.
++ For every one unit increase in the rating of `expected_happy_with_sd_people`, the odds of deciding yes are expected to decrease by 12%.
++ For every one match increase in `expected_num_matches`, the odds of deciding yes are expected to increase by 8%.
++ For every one hundredth increase in `criteria_percent`, the odds of deciding yes are expected to increase by 14%
+
+# Conclusion
+
+GENERAL WRITING OF STUFF, MIKE HAS ALREADY WRITTEN SOME IN GOOGLE DOCS
+
+# References
+
+1. Diane Arieff Zaga. "Matchmaker, Matchmaker". The Jewish Journal, February 2–8, 1996.
+2. “Speed-dating as an invaluable tool for studying romantic attraction: A methodological primer”, Finkel, Eastwick, and Matthews, 2007, Personal Relationships,        Volume 14.
+3. https://doi.org/10.1016/j.jrp.2021.104113, “What you see is what you want to get: Perceived abilities outperform objective test performance in predicting mate       appeal in speed dating”, Hofer et al, 2021.
+4. https://doi. org/10.1371/journal.pone.0274860, “Originality in online dating profile texts: “How does perceived originality affect impression formation and what     makes a text original?” van der Zanden T, Schouten AP, Mos MBJ, Krahmer EJ.
