@@ -2,7 +2,9 @@
 title: "Speed Dating Project"
 author: "Mike Derkowski, Jared Lee, and Josh Weber"
 date: "`r Sys.Date()`"
-output: pdf_document
+output:
+  html_document:
+    df_print: paged
 ---
 
 ```{r setup, include=FALSE}
@@ -337,7 +339,132 @@ MIKE THIS IS WHERE YOUR STUFF GOES
 
 ## Knowing the complexity of human nature, should desired characteristics be treated more holistically?
 
-JOSH THIS IS WHERE YOUR STUFF GOES
+### Variable Selection
+
+```{r}
+everything_model<-glm(match ~ wave + gender + age + age_o + d_age + race + race_o + 
+    samerace + importance_same_race + importance_same_religion + 
+    pref_o_attractive + pref_o_sincere + pref_o_intelligence + 
+    pref_o_funny + pref_o_ambitious + pref_o_shared_interests + 
+    attractive_o + sinsere_o + intelligence_o + funny_o + ambitous_o + 
+    shared_interests_o + attractive_important + sincere_important + 
+    intellicence_important + funny_important + ambtition_important + 
+    shared_interests_important + attractive + sincere + intelligence + 
+    funny + ambition + attractive_partner + sincere_partner + 
+    intelligence_partner + funny_partner + ambition_partner + 
+    shared_interests_partner + sports + tvsports + exercise + 
+    dining + museums + art + hiking + gaming + clubbing + reading + 
+    tv + theater + movies + concerts + music + shopping + yoga + 
+    interests_correlate + expected_happy_with_sd_people + expected_num_interested_in_me + 
+    expected_num_matches + like + guess_prob_liked + met + criteria_o_percent + criteria_percent, family = "binomial", data=speed_dating)
+stepAIC(everything_model)
+```
+
+
+
+### Create Training and testing set
+
+```{r,comment=NA}
+set.seed(1000)
+index<- sample(dim(speed_dating)[1], round(dim(speed_dating)[1]*0.8))
+train<- speed_dating[index,]
+test<- speed_dating[-index,]
+```
+
+
+
+### Logistic Regression 
+
+```{r, comment=NA}
+
+mdl = glm(formula = match ~ d_age + race + race_o + importance_same_religion + 
+    pref_o_attractive + pref_o_sincere + pref_o_ambitious + attractive_o + 
+    sinsere_o + funny_o + ambitous_o + shared_interests_o + attractive_important + 
+    sincere_important + intellicence_important + funny_important + 
+    ambtition_important + shared_interests_important + attractive + 
+    intelligence + attractive_partner + sincere_partner + intelligence_partner + 
+    ambition_partner + tvsports + museums + art + clubbing + 
+    reading + tv + movies + concerts + shopping + expected_num_interested_in_me + 
+    expected_num_matches + like + guess_prob_liked + criteria_o_percent + 
+    criteria_percent, family = "binomial", data = speed_dating)
+
+
+
+
+summary(mdl)$coef
+
+vif(mdl)
+
+```
+
+### After Removing Multicolinearity
+
+```{r}
+mdl =glm(formula = match ~ d_age + race + race_o + importance_same_religion + 
+    pref_o_attractive + pref_o_sincere + pref_o_ambitious + attractive_o + 
+    sinsere_o + funny_o + ambitous_o + shared_interests_o + funny_important + 
+    ambtition_important + shared_interests_important + attractive + 
+    intelligence + attractive_partner + sincere_partner + intelligence_partner + 
+    ambition_partner + tvsports + museums + art + clubbing + 
+    reading + tv + movies + concerts + shopping + expected_num_interested_in_me + 
+    expected_num_matches + like + guess_prob_liked, family = "binomial", data = speed_dating)
+
+summary(mdl)$coef
+
+vif(mdl)
+```
+
+
+
+### Prediction Accuracy Using Confusion matrix
+
+```{r, comment=NA}
+prob1<-stats::predict(mdl, newdata=test)#  this will result in log odds ratio
+prob1<-stats::predict(mdl, newdata=test, type="response") 
+# `type=response` provides predicted probability 
+
+
+pred1<- rep(0,dim(test)[1]) ## create a zero vector, there are 115 rows  in the training set
+
+pred1[prob1>0.4]=1 ## if predicted probability is more than 60%, we mark that as a survived.
+tab1<-table(pred1, test$match) # confusion matrix
+addmargins(tab1)
+ sum(diag(tab1))/sum(tab1)# 
+
+```
+
+
+
+### Visualize the Logistic Model
+
+```{r, comment=NA}
+
+params = c('d_age', 'importance_same_religion', 'pref_o_attractive', 'pref_o_sincere', 'pref_o_ambitious', 'attractive_o', 'sinsere_o', 'funny_o', 'ambitous_o', 'shared_interests_o', 'funny_important', 'ambtition_important', 'shared_interests_important', 'attractive_partner', 'sincere_partner', 'intelligence_partner', 'ambition_partner', 'tvsports', 'museums', 'art', 'clubbing', 'reading', 'tv', 'movies', 'concerts', 'shopping', 'expected_num_interested_in_me', 'expected_num_matches', 'like', 'guess_prob_liked'
+)
+
+for(param in params){
+  data=broom::augment(mdl,type.predict = "response")
+  print(ggplot(data, aes(x= .data[[param]]))+
+  #geom_jitter(aes(y=Survived))+
+    geom_smooth( aes(y=.fitted)))
+}
+
+
+
+```
+
+
+The goal of this research question was to create the best possible model to predict whether a match would occur without using the decisions from either individual. This proved to be very difficult due to the number of variables present and the nature of human interaction in relationships.
+
+The initial idea was to create two columns `criteria_percent` and `criteria_o_percent` which represented weighted ratings of what each partner marked as important and what they rated the other. These values were calculated on a scale from 0 to 1. Although this seemed to be an interesting way to capture the overall thoughts and feelings about the other partner it proved to not be very useful. We believe this is because we of lose data when consolidating many columns into one. The other thing to keep in mind is what people think is important may not be what's actually affecting the results and by consolidating the column the model loses the ability to determine what is objectively most important.
+
+To create this final model we first used the StepAIC function to and used the model with the lowest AIC value. From there we examined the model using VIF to determine parameters that were colinear. The colinear parameters pruned in this process were `attractive_important`, `sincere_important`, `intellicence_important`, `criteria_o_percent`, `criteria_percent`. This refers back to the earlier point about consolidating the columns and losing data, as the weighted criteria columns had colinearity with other columns since they were derived from them.
+
+Out of all interactions and models tested ,this model does have the best accuracy percentage of 87.4% with a 80/20 split of train and test data. This seems incredibly accurate however it is not that impressive. Since the data set contains only ~16% matches the model could predict all non-matches and be 84% right. This means that the model has trouble being able to accurately predict matches which can be seen by the 129 false positives and 121 true positives, leaving the accuracy of matches less than 50%. Due to the nature of human interaction and relationships more complex data and analysis may need to be done to improve the model. Additionally, it's completely reasonable that a nearly perfect match on paper could have a horrible first interaction meaning that the match doesn't happen. This specific example is one of many reasons why it could be extremely difficult to predict matches with this data set.
+
+Lastly, we have provided visualizations of the logistic model with nearly all of the parameters. Many of these graphs show interesting patterns about the parameter's affect on the chance of a match. For example we can see that the statistics collected for the `like` meaning how much you liked your partner and `guess_prop_liked` meaning how much you think your partner liked you appear to have a strong affect on the models prediction. Additionally, The variables `amibtion_important` and `pref_o_ambitious` appear to have almost no effect on the model due to their straight line visualizations. This may mean they can be pruned from the model, however more tweaking and analysis of the model may need to be performed because removing these does decrease the accuracy in our tests.
+
+
 
 ## What impact does race have on speed dating expectations, preferences, and outcomes?
 
