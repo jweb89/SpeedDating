@@ -145,12 +145,12 @@ speed_dating_race = speed_dating %>%
                      "Latino/Hispanic American", "Black/African American"))
 
 # Data frame of males whose most important category score was greater than 8
-male_with_desireable_mate <- speed_dating_enhanced %>%
+male_with_desireable_mate <- speed_dating %>%
   filter(gender == "male") %>%
   filter(most_important_cat_score > 8)
 
 # Data frame of females whose most important category score was greater than 8
-female_with_desireable_mate <- speed_dating_enhanced %>%
+female_with_desireable_mate <- speed_dating %>%
   filter(gender == "female") %>%
   filter(most_important_cat_score > 8)
 ```
@@ -343,7 +343,7 @@ As mention earlier, men’s preferences most often point to the importance of at
 Another interesting piece of information uncovered was the willingness of each gender to agree to a date.  Recall that the result of each interaction between participants results in two ‘votes’ being placed, one for each side.  An actual date only occurs if both participants desire a date.  Among men, they requested a date in 47% of the interactions.  Women requested a date at a 36% rate.  
 To test out the theory that a person’s most desired trait is the only trait that matters, we created two models, one for each gender.  For the men, the results are the following:
 ```{r}
-index_md<- sample(dim(speed_dating_enhanced)[1], round(dim(speed_dating_enhanced)[1]*0.8))
+index_md<- sample(dim(speed_dating)[1], round(dim(speed_dating)[1]*0.8))
 train_md<- speed_dating[index_md,]
 test_md<- speed_dating[-index_md,]
 
