@@ -1,6 +1,6 @@
 ---
 title: "Speed Dating Project"
-author: "Mike Derkowski, Jared Lee, and Josh Weber "
+author: "Mike Derkowski, Jared Lee, and Josh Weber test124!"
 date: "`r Sys.Date()`"
 output:
   html_document:
