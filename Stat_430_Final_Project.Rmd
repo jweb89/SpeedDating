@@ -380,7 +380,7 @@ addmargins(tab_md)
  sum(diag(tab_md))/sum(tab_md) 
 ```
 Looking closely at the results, several things are worth noting.  The model predicts that men will ask to date at a rate of 442/(442+943) or 32% versus the previously mentioned 47%.  
-The result for the women seems to be a bit better.
+The result for the women seems to be a bit better, accurately predicting 77% of choices to date or not to date.
 ```{r}
 summary(model_whats_important_female)$coef
 prob_md<-stats::predict(model_whats_important_female, newdata=test_md)#  this will result in log odds ratio
@@ -397,7 +397,7 @@ addmargins(tab_md)
 ```
 Both models seem to share the characteristic that they do a great job of predicting incompatible people!  
 Another question that this brings up is what happens when the person’s rating of the other’s most important attribute is high?  One of the columns in the dataset is the person’s rating of the other, and we can look into how this rating, in combination with the person's most desired trait, affects the desire to ask for a date.  As an example of this, this might be a woman whose most desired trait is that of intelligence, and her rating of the potential date’s intelligence.  
-Can we accurately predict what a man will do when his counterpart ’s most desired characteristic is scored by them as 8 or higher? In this condition, they are likely to request a date over 73% of the time.  
+Can we accurately predict what a man will do when his counterpart ’s most desired characteristic is scored by them as 8 or higher? In this condition, they are likely to request a date over 72% of the time.  
 ```{r}
 #
 male_with_desireable_mate <- male_for_decision_model %>%
@@ -407,7 +407,7 @@ sum(male_with_desireable_mate$decision == 1) / dim(male_with_desireable_mate)[1]
 ```
 
 
-If a woman’s most desired trait is 8 or higher, she is only 56% likely to request a date.  This seems to affirm that more than one trait is important to women.
+If a woman’s most desired trait is 8 or higher, she is only 57% likely to request a date.  This seems to affirm that more than one trait is important to women.
 ## What if we filter women where their MOST DESIRED characteristic is high?  >8?
 ## Not so certain.  Maybe women's preferences are more balanced?
 ```{r}
