@@ -72,11 +72,11 @@ expected_num_matches, like, met),~replace_na(., median(., na.rm=TRUE))))
 
 # Creation of most important category column
 speed_dating$most_important_category = 
-  str_remove(colnames(speed_dating[,25:30])[max.col(speed_dating[,25:30], 
+  str_remove(colnames(speed_dating[,24:29])[max.col(speed_dating[,24:29], 
                                                     ties.method="first")],"_important")
 
 # Creation of  maximum column index
-maximum_col_index = as.integer(max.col(speed_dating[,25:30],ties.method="first"))
+maximum_col_index = as.integer(max.col(speed_dating[,24:29],ties.method="first"))
 
 # Creation of overall criteria percent met columns
 speed_dating = speed_dating %>% mutate(
@@ -96,13 +96,15 @@ speed_dating = speed_dating %>% mutate(
 
 
 # Creation of sub data-frame with most important category score
-speed_dating_enhanced <- speed_dating %>%
+speed_dating <- speed_dating %>%
   mutate(most_important_cat_score = case_when(maximum_col_index == 1 ~ attractive_partner,
   maximum_col_index == 2 ~ sincere_partner,
   maximum_col_index == 3 ~ intelligence_partner,
   maximum_col_index == 4 ~ funny_partner,
   maximum_col_index == 5 ~ ambition_partner,
   maximum_col_index == 6 ~ shared_interests_partner))
+
+View(speed_dating)
 
 # Male only data-frame
 male <- speed_dating %>%
@@ -194,7 +196,7 @@ sum(female_with_desireable_mate$decision == 1) / dim(female_with_desireable_mate
 Across the entire data set, approximately 16.47% of dates resulted in a match. While men are likely to want to date their partner nearly 50% of the time, women are much less so at about 37%. MIKE TO WRITE SENTENCE ABOUT DESIRABLE MATE PERCENTAGES
 
 ```{r}
-# Bar chart of important features--need verif
+# Bar chart of important features
 ggplot(male, aes(most_important_category)) +
   geom_bar(fill = "#0073C2FF")  +
   ggtitle("Most Important Feature to Men")
@@ -204,7 +206,7 @@ ggplot(female, aes(most_important_category)) +
   ggtitle("Most Important Feature to Women")
 ```
 
-MIKE TO PROVIDE DISCUSSION OF CHARTS
+The above bar charts show the traits that are desired most often, as expressed by the participants.  Men overwhelmingly state that their most important attribute that they are looking for in a date is attractiveness, almost two out of every three men.  In contrast, women seem to have a much more balanced selection of desired traits.  The most important trait to women is that of sincerity, followed closely by attractiveness and intelligence.
 
 ```{r}
 combined_pref = data.frame(
@@ -336,7 +338,88 @@ JARED WRITE HERE
 
 ## Does every Person has a single desired characteristic they are looking for, and is this the determining factor in offering to date?
 
-MIKE THIS IS WHERE YOUR STUFF GOES
+In examining this question, we started by looking at the dataset filtered to a dataset consisting of men only, and another dataset consisting of women only.  In order to look into this theory further, we created two new columns in each dataset.  The first column was calculated by selecting the trait or characteristic that the person assigned the importance.  The next column took the rating that the person assigned as the most important, and assigned the rating (0-100) as a measure of relative importance.  
+As mention earlier, men’s preferences most often point to the importance of attractiveness, with intelligence and sincerity occurring much less frequently.  On the other hand, women tend to have a more balanced set of desired traits.  The highest scores for women’s desired traits are sincerity, attractiveness, and intelligence.
+Another interesting piece of information uncovered was the willingness of each gender to agree to a date.  Recall that the result of each interaction between participants results in two ‘votes’ being placed, one for each side.  An actual date only occurs if both participants desire a date.  Among men, they requested a date in 47% of the interactions.  Women requested a date at a 36% rate.  
+To test out the theory that a person’s most desired trait is the only trait that matters, we created two models, one for each gender.  For the men, the results are the following:
+```{r}
+index_md<- sample(dim(speed_dating_enhanced)[1], round(dim(speed_dating_enhanced)[1]*0.8))
+train_md<- speed_dating[index_md,]
+test_md<- speed_dating[-index_md,]
+
+
+
+# Male only frame
+male_for_decision_model <- train_md %>%
+  filter(gender == "male")
+# Female only frame
+female_for_decision_model <- train_md %>%
+  filter(gender == "female")
+
+
+model_whats_important_male = glm(decision ~ most_important_cat_score, male_for_decision_model, family = 'binomial')
+
+summary(model_whats_important_male)$coef
+
+model_whats_important_female = glm(decision ~ most_important_cat_score, female_for_decision_model, family = 'binomial')
+
+#summary(model_whats_important_female)$coef
+```
+Using an 80/20 test split, and examining the results, we see that we have an accuracy rate of 66%.
+```{r}
+prob_md<-stats::predict(model_whats_important_male, newdata=test_md)#  this will result in log odds ratio
+prob_md<-stats::predict(model_whats_important_male, newdata=test_md, type="response") 
+# `type=response` provides predicted probability 
+
+
+pred_md<- rep(0,dim(test_md)[1]) ## create a zero vector, there are 1676 rows  in the test set
+
+pred_md[prob_md>0.6]=1 ## if predicted probability is more than 60%, we mark that as a request to date.
+tab_md<-table(pred_md, test_md$match) 
+addmargins(tab_md)
+ sum(diag(tab_md))/sum(tab_md) 
+```
+Looking closely at the results, several things are worth noting.  The model predicts that men will ask to date at a rate of 442/(442+943) or 32% versus the previously mentioned 47%.  
+The result for the women seems to be a bit better.
+```{r}
+summary(model_whats_important_female)$coef
+prob_md<-stats::predict(model_whats_important_female, newdata=test_md)#  this will result in log odds ratio
+prob_md<-stats::predict(model_whats_important_female, newdata=test_md, type="response") 
+# `type=response` provides predicted probability 
+
+
+pred_md<- rep(0,dim(test_md)[1]) ## create a zero vector, there are 1676 rows in the test set
+
+pred_md[prob_md>0.5]=1 ## if predicted probability is more than 50%, we mark that as a request to date.
+tab_md<-table(pred_md, test_md$match) 
+addmargins(tab_md)
+ sum(diag(tab_md))/sum(tab_md) 
+```
+Both models seem to share the characteristic that they do a great job of predicting incompatible people!  
+Another question that this brings up is what happens when the person’s rating of the other’s most important attribute is high?  One of the columns in the dataset is the person’s rating of the other, and we can look into how this rating, in combination with the person's most desired trait, affects the desire to ask for a date.  As an example of this, this might be a woman whose most desired trait is that of intelligence, and her rating of the potential date’s intelligence.  
+Can we accurately predict what a man will do when his counterpart ’s most desired characteristic is scored by them as 8 or higher? In this condition, they are likely to request a date over 73% of the time.  
+```{r}
+#
+male_with_desireable_mate <- male_for_decision_model %>%
+  filter(most_important_cat_score >= 8)
+
+sum(male_with_desireable_mate$decision == 1) / dim(male_with_desireable_mate)[1]
+```
+
+
+If a woman’s most desired trait is 8 or higher, she is only 56% likely to request a date.  This seems to affirm that more than one trait is important to women.
+## What if we filter women where their MOST DESIRED characteristic is high?  >8?
+## Not so certain.  Maybe women's preferences are more balanced?
+```{r}
+#
+female_with_desireable_mate <- female_for_decision_model %>%
+  filter(most_important_cat_score > 8)
+
+sum(female_with_desireable_mate$decision == 1) / dim(female_with_desireable_mate)[1]
+```
+As a researcher, it seems clear that the idea of a most important trait being singularly important is not the way the real world works.  These can help to create a model that does a decent job of predicting a person's desire to date, but there are likely layers of complexity that need to be added to create a truly accurate model.
+
+
 
 ## Knowing the complexity of human nature, should desired characteristics be treated more holistically?
 
@@ -716,7 +799,10 @@ Else else held constant, the coefficients can be interpreted as such
 
 # Conclusion
 
-GENERAL WRITING OF STUFF, MIKE HAS ALREADY WRITTEN SOME IN GOOGLE DOCS
+It is very clear that dating and human interactions are very complex.  We had a fascinating and complex data set to explore.  In addition to measuring each person’s desired compatibilities, their ratings of themselves, and the interaction of the person on the other side of the table, we also had to try to predict what would happen when two different individuals interacted.  What we see in the data is a very complex matrix of traits, but what we do not see is the multifaceted reality of the interaction.  Was a person in a bad mood during the session?  Was either influenced by the previous 4-minute session they had just minutes ago?
+One of the first efforts we had was to naively believe that people are mostly influenced by a single trait in potential mates.  While the models we generated from this approach were fairly accurate, they had disappointing overall results.  However, this simple model revealed some shortcomings that would help to create better models.
+QUICK PARAGRAPH BY JOSH DISCUSSING FINDING
+QUICK PARAGRAPH BY JARED ABOUT FINDINGS
 
 # References
 
