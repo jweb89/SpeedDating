@@ -18,7 +18,6 @@ library(Hmisc)
 library(MASS)
 library(lmtest)
 library(pROC)
-library(Metrics)
 ```
 
 ```{r}
@@ -332,7 +331,7 @@ mtx_cor_df <- reshape2::acast(cor_df, Var1~Var2, value.var="Freq")
 corrplot(mtx_cor_df, is.corr=FALSE, tl.col="black", na.label=" ")
 ```
 
-JARED WRITE HERE
+Due to the vast number of variables included in our data set, we have provided a filtered correlation matrix which only displays variables with correlations greater than .7. As can be seen from the display, the two variables with the strongest correlation are art and museums. This correlation is intuitive in nature, since museums often display art, and art is often displayed in museums. Therefore, participants who rated higher interest in museums, would be expected to also rate higher interest in art. Two other interestingly high correlations are those between `criteria_percent` and `funny_partner`, as well as `criteria_o_percent` and `funny_o`. Based on these, it can be stated that as participant's rating of their partner as funny increased, the aggregate percent of their criteria fulfilled by their partner also increased. This association can also be seen from the perspective of the partner.
 
 # Statistical Analysis and Discussion
 
