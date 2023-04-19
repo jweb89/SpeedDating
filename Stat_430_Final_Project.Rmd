@@ -234,7 +234,7 @@ ggplot(combined_pref, aes(preference, average, fill = gender)) +
   ggtitle("Average % for Each Trait")
 ```
 
-The above table shows the average percentage of importance for six traits, colored by men and women. MIKE OR JOSH DISCUSS THE GRAPH WHICHEVER ONE OF YOUR REFERS TO THE INFORMATION
+The above table shows the average percentage of importance for six traits, colored by men and women. This chart shows that men tend to weigh attractiveness as the most important trait while women are more evenly spread out among the importance of the traits. This idea surrounding the most important trait will be explored in our first research question.
 
 ```{r}
 race_traits = data.frame(
@@ -407,6 +407,7 @@ sum(male_with_desireable_mate$decision == 1) / dim(male_with_desireable_mate)[1]
 
 
 If a woman’s most desired trait is 8 or higher, she is only 57% likely to request a date.  This seems to affirm that more than one trait is important to women.
+
 ## What if we filter women where their MOST DESIRED characteristic is high?  >8?
 ## Not so certain.  Maybe women's preferences are more balanced?
 ```{r}
@@ -812,7 +813,9 @@ Before moving into the conclusion of our project, we would like to mention a cou
 
 It is very clear that dating and human interactions are very complex.  We had a fascinating and complex data set to explore.  In addition to measuring each person’s desired compatibilities, their ratings of themselves, and the interaction of the person on the other side of the table, we also had to try to predict what would happen when two different individuals interacted.  What we see in the data is a very complex matrix of traits, but what we do not see is the multifaceted reality of the interaction.  Was a person in a bad mood during the session?  Was either influenced by the previous 4-minute session they had just minutes ago?
 One of the first efforts we had was to naively believe that people are mostly influenced by a single trait in potential mates.  While the models we generated from this approach were fairly accurate, they had disappointing overall results.  However, this simple model revealed some shortcomings that would help to create better models.
-QUICK PARAGRAPH BY JOSH DISCUSSING FINDING
+
+In our second question, we also had somewhat disappointing results. The accuracy was good, but as we mentioned previously it was not very accurate at predicting matches based on the data available despite using the as many parameters as would improve the model. This further speaks to the idea that human interaction is extremely complex and there are surely many aspects of these 4 minutes speed dates that are not captured in the dataset.
+
 QUICK PARAGRAPH BY JARED ABOUT FINDINGS
 
 # References
