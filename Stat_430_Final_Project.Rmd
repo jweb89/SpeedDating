@@ -20,6 +20,7 @@ library(MASS)
 library(lmtest)
 library(pROC)
 library(mosaic)
+library(ggpubr)
 ```
 
 ```{r}
@@ -105,7 +106,6 @@ speed_dating <- speed_dating %>%
   maximum_col_index == 5 ~ ambition_partner,
   maximum_col_index == 6 ~ shared_interests_partner))
 
-View(speed_dating)
 
 # Male only data-frame
 male <- speed_dating %>%
@@ -540,15 +540,15 @@ vif(mdl)
 ```{r, comment=NA}
 prob1<-stats::predict(mdl, newdata=test)#  this will result in log odds ratio
 prob1<-stats::predict(mdl, newdata=test, type="response") 
-# `type=response` provides predicted probability 
+
 
 
 pred1<- rep(0,dim(test)[1]) ## create a zero vector, there are 115 rows  in the training set
 
-pred1[prob1>0.4]=1 ## if predicted probability is more than 60%, we mark that as a survived.
+pred1[prob1>0.4	]=1 ## if predicted probability is more than 60%, we mark that as a survived.
 tab1<-table(pred1, test$match) # confusion matrix
 addmargins(tab1)
- sum(diag(tab1))/sum(tab1)# 
+ sum(diag(tab1))/sum(tab1)
 
 ```
 
@@ -561,12 +561,24 @@ addmargins(tab1)
 params = c('d_age', 'importance_same_religion', 'pref_o_attractive', 'pref_o_sincere', 'pref_o_ambitious', 'attractive_o', 'sinsere_o', 'funny_o', 'ambitous_o', 'shared_interests_o', 'funny_important', 'ambtition_important', 'shared_interests_important', 'attractive_partner', 'sincere_partner', 'intelligence_partner', 'ambition_partner', 'tvsports', 'museums', 'art', 'clubbing', 'reading', 'tv', 'movies', 'concerts', 'shopping', 'expected_num_interested_in_me', 'expected_num_matches', 'like', 'guess_prob_liked'
 )
 
+plots = list()
+i = 1
+
 for(param in params){
   data=broom::augment(mdl,type.predict = "response")
-  print(ggplot(data, aes(x= .data[[param]]))+
-  #geom_jitter(aes(y=Survived))+
-    geom_smooth( aes(y=.fitted)))
+  plot = ggplot(data, aes(x= .data[[param]]))+
+    geom_smooth( aes(y=.fitted))
+  plots[[i]] = plot
+  i = i + 1
 }
+
+# Split the plots in 2 so it shows better
+my_list_split <- split(plots, f = rep(1:2, length.out = length(plots)))
+first_half <- my_list_split[[1]]
+second_half <- my_list_split[[2]]
+ggarrange(plotlist = first_half)
+ggarrange(plotlist = second_half)
+
 
 
 
