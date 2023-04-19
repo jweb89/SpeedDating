@@ -19,6 +19,7 @@ library(Hmisc)
 library(MASS)
 library(lmtest)
 library(pROC)
+library(mosaic)
 ```
 
 ```{r}
@@ -181,7 +182,21 @@ This is where we will right about the data set, where it is from, and the paragr
 
 ## Exploratory Data Analysis: Descriptive Statistics and Visualizations
 
-This is where the tables of variables will be placed.
+```{r}
+df <- data.frame() 
+num_vars <- sapply(speed_dating, is.numeric) 
+for(n in names(speed_dating)[num_vars]) {
+  output <- favstats(speed_dating[[n]])
+  df <- rbind(df, output)
+}
+
+variable <- names(speed_dating)[num_vars]
+
+summarytable <- cbind(variable, df)
+knitr::kable(summarytable, row.names = FALSE)
+```
+
+The above table shows summary statistics for all numeric variables in the data set, other than those initially removed.
 
 ```{r}
 sum(speed_dating$match == 1) / dim(speed_dating)[1] * 100
