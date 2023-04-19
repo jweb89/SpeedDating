@@ -3,8 +3,9 @@ title: "Speed Dating Project"
 author: "Mike Derkowski, Jared Lee, and Josh Weber"
 date: "`r Sys.Date()`"
 output:
+  pdf_document: default
   html_document:
-    df_print: paged 
+    df_print: paged
 ---
 
 ```{r setup, include=FALSE}
@@ -156,15 +157,15 @@ female_with_desireable_mate <- speed_dating %>%
 
 # Introduction
 
-Speed dating is a popular social event that has become increasingly popular over the years. It is a structured way for singles to meet and connect with many potential partners in a short amount of time. During a speed dating event, participants typically rotate through a series of short interactions, spending a few minutes chatting with each person before moving on to the next. This format allows singles to quickly assess their compatibility with a variety of individuals, and potentially find someone with whom they share a mutual attraction. The concept of speed dating has been adapted to various age groups, interests, and orientations, making it a versatile and exciting way to meet new people.
+Speed dating is a social event that has become increasingly popular over the years. It is a structured way for singles to meet and connect with many potential partners in a short amount of time. During a speed dating event, participants typically rotate through a series of short interactions, spending a few minutes chatting with each person before moving on to the next. This format allows singles to quickly assess their compatibility with a variety of individuals, and find someone with whom they share a mutual attraction. The concept of speed dating has been adapted to various age groups, interests, and orientations, making it a versatile and exciting way to meet new people.
 
 One of the first documented uses of speed dating was with young Orthodox $adults^1$.  Usually, Orthodox boys and girls were separated at school and had very little chance of social interaction with the opposite sex.  Matchmakers were intermediaries that helped to get compatible dates together by holding events where the participants could meet a variety of potential mates and disclose to the matchmaker in private that they were interested in the other person.  The matchmaker would then arrange for the young adults to meet.
 
 One of the main themes of speed dating was to allow the participants to see a deeper dimension of the people they were meeting by giving a bit of time for conversation to $develop^2$.  This was to avoid the observation that traditionally, only “Attractive women and outgoing men” have success in $dating^1$.The Kaggle data set that we used was collected between 2002 and 2004.
 
-## Research Question 1: Does every Person has a single desired characteristic they are looking for, and is this the determining factor in offering to date?
+## Research Question 1: Does every person have a single desired characteristic they are looking for, and is this the determining factor in offering to date?
 
-The main idea behind this was to further examine the idea that men simply look for the most attractive women, and women are likely to have a more balanced approach to their desired dates.  In this case, we arrived at this as a research topic through intuition of the dataset.  In examining the data, we could see differences in men and women empirically.  Looking at the data closer led to the possibility that the genders look for different characteristics when choosing a date.
+The main idea behind this was to further examine the idea that men simply look for the most attractive women, and women are likely to have a more balanced approach to their desired dates.  In this case, we arrived at this as a research topic through intuition of the data set.  In examining the data, we could see differences in men and women empirically.  Looking at the data closer led to the possibility that the genders look for different characteristics when choosing a date.
 
 ## Research Question 2: Knowing the complexity of human nature, should desired characteristics be treated more holistically?
 
@@ -337,10 +338,11 @@ Due to the vast number of variables included in our data set, we have provided a
 
 ## Does every Person has a single desired characteristic they are looking for, and is this the determining factor in offering to date?
 
-In examining this question, we started by looking at the dataset filtered to a dataset consisting of men only, and another dataset consisting of women only.  In order to look into this theory further, we created two new columns in each dataset.  The first column was calculated by selecting the trait or characteristic that the person assigned the importance.  The next column took the rating that the person assigned as the most important, and assigned the rating (0-100) as a measure of relative importance.  
-As mention earlier, men’s preferences most often point to the importance of attractiveness, with intelligence and sincerity occurring much less frequently.  On the other hand, women tend to have a more balanced set of desired traits.  The highest scores for women’s desired traits are sincerity, attractiveness, and intelligence.
+In examining this question, we started by looking at the data set filtered to a data set consisting of men only, and another data set consisting of women only.  In order to look into this theory further, we created two new columns in each data set.  The first column was calculated by selecting the trait or characteristic that the person assigned the importance.  The next column took the rating that the person assigned as the most important, and assigned the rating (0-100) as a measure of relative importance.  
+As mention earlier, mens' preferences most often point to the importance of attractiveness, with intelligence and sincerity occurring much less frequently.  On the other hand, women tend to have a more balanced set of desired traits.  The highest scores for womens' desired traits are sincerity, attractiveness, and intelligence.
 Another interesting piece of information uncovered was the willingness of each gender to agree to a date.  Recall that the result of each interaction between participants results in two ‘votes’ being placed, one for each side.  An actual date only occurs if both participants desire a date.  Among men, they requested a date in 47% of the interactions.  Women requested a date at a 36% rate.  
 To test out the theory that a person’s most desired trait is the only trait that matters, we created two models, one for each gender.  For the men, the results are the following:
+
 ```{r}
 index_md<- sample(dim(speed_dating)[1], round(dim(speed_dating)[1]*0.8))
 train_md<- speed_dating[index_md,]
@@ -364,7 +366,9 @@ model_whats_important_female = glm(decision ~ most_important_cat_score, female_f
 
 #summary(model_whats_important_female)$coef
 ```
+
 Using an 80/20 test split, and examining the results, we see that we have an accuracy rate of 66%.
+
 ```{r}
 prob_md<-stats::predict(model_whats_important_male, newdata=test_md)#  this will result in log odds ratio
 prob_md<-stats::predict(model_whats_important_male, newdata=test_md, type="response") 
@@ -378,8 +382,10 @@ tab_md<-table(pred_md, test_md$match)
 addmargins(tab_md)
  sum(diag(tab_md))/sum(tab_md) 
 ```
+
 Looking closely at the results, several things are worth noting.  The model predicts that men will ask to date at a rate of 442/(442+943) or 32% versus the previously mentioned 47%.  
 The result for the women seems to be a bit better, accurately predicting 77% of choices to date or not to date.
+
 ```{r}
 summary(model_whats_important_female)$coef
 prob_md<-stats::predict(model_whats_important_female, newdata=test_md)#  this will result in log odds ratio
@@ -394,9 +400,11 @@ tab_md<-table(pred_md, test_md$match)
 addmargins(tab_md)
  sum(diag(tab_md))/sum(tab_md) 
 ```
+
 Both models seem to share the characteristic that they do a great job of predicting incompatible people!  
-Another question that this brings up is what happens when the person’s rating of the other’s most important attribute is high?  One of the columns in the dataset is the person’s rating of the other, and we can look into how this rating, in combination with the person's most desired trait, affects the desire to ask for a date.  As an example of this, this might be a woman whose most desired trait is that of intelligence, and her rating of the potential date’s intelligence.  
+Another question that this brings up is what happens when the person’s rating of the other's most important attribute is high?  One of the columns in the data set is the person’s rating of the other, and we can look into how this rating, in combination with the person's most desired trait, affects the desire to ask for a date.  As an example of this, this might be a woman whose most desired trait is that of intelligence, and her rating of the potential date’s intelligence.  
 Can we accurately predict what a man will do when his counterpart ’s most desired characteristic is scored by them as 8 or higher? In this condition, they are likely to request a date over 72% of the time.  
+
 ```{r}
 #
 male_with_desireable_mate <- male_for_decision_model %>%
@@ -405,11 +413,11 @@ male_with_desireable_mate <- male_for_decision_model %>%
 sum(male_with_desireable_mate$decision == 1) / dim(male_with_desireable_mate)[1]
 ```
 
-
 If a woman’s most desired trait is 8 or higher, she is only 57% likely to request a date.  This seems to affirm that more than one trait is important to women.
 
 ## What if we filter women where their MOST DESIRED characteristic is high?  >8?
 ## Not so certain.  Maybe women's preferences are more balanced?
+
 ```{r}
 #
 female_with_desireable_mate <- female_for_decision_model %>%
@@ -799,7 +807,7 @@ Else else held constant, the coefficients can be interpreted as such
 
 ## Race Models Discussion and Comparison
 
-One of the most unexpected findings of the models we created by race is that increasing values in trait importance, across attractiveness, sincerity, intelligence, funniness, and ambition, actually results in reduced odds of the participant's decision equaling yes. Prior to this discovery, we had theorized that individuals with certain important traits may be more or less likely to choose matches, and that this could differ across races. While some of the trait importance variables did not make it into all of the final models, each and every one is negatively associated with odds of the participants decision to choose yes. After spending some time thinking this over, we believe that it makes sense. Individuals who are more picky, and therefore hold traits to be more important prior to even meeting a potential partner, are less likely to want to match. The more heavily weighted a certain trait is, the greater chance the participant may be disappointed by their partner.
+One of the most unexpected findings of the models we created by race is that increasing values in trait importance, across attractiveness, sincerity, intelligence, funniness, and ambition, actually results in reduced odds of the participant's decision equaling yes. Prior to this discovery, we had theorized that individuals with certain important traits may be more or less likely to choose matches, and that this could differ across races. While some of the trait importance variables did not make it into all of the final models, each and every one is negatively associated with odds of the participant's decision to choose yes. After spending some time thinking this over, we believe that it makes sense. Individuals who are more picky, and therefore hold traits to be more important prior to even meeting a potential partner, are less likely to want to match. The more heavily weighted a certain trait is, the greater chance the participant may be disappointed by their partner.
 
 Another interesting finding is that `gender` is only included in both the APIAA and ECA models. In both cases, when the participant is male, their odds of deciding yes to a match are greatly increased. This may indicate that males who belong to the APIAA and ECA groups are more desperate to find a partner, or that males from the BAA and LHA groups are more thoughtful in doing so.
 
@@ -807,16 +815,16 @@ A second surprising result of our models is that with any increase in `expected_
 
 A few other points to note are in regards to the `expected_num_matches`, `interests_correlate`, and `criteria_percent` variables. In all four of the race models, increases in the expected number of matches resulted in increased odds of deciding yes. Our guess is that the reasoning for this is simple, such that individuals who expect more matches are more likely to agree to more matches and avoid disappointment. The `interests_correlate` variable only appeared in the ECA model, which indicates that how well the interests of a participant and their partner match may not be of as much importance as is often thought in today's society. In all four of the models, the `criteria_percent` variable is positively associated with the odds of deciding yes, which is to be expected. A partner who "fits the bill" of a participant's desires is surely more likely to be sought out for a match.
 
-Before moving into the conclusion of our project, we would like to mention a couple of important things. First, the variables used to create the models by race were by no means exhaustive of those in the data set, and therefore are likely to be missing lots of important information. It is unreasonable to think that a model which includes information almost solely related to one participant would be accurate in making predictions about the outcome of a two-person scenario. Second, even with the model outcomes only considering the decision of the participant, they are still relatively inaccurate, as displayed by the confusion matrices. For these reasons, we do not feel that the race model results are able to be confidently generalized to speed dating events, and believe that further research into the differences in outcomes across individuals of different ethnic backgrounds would be interesting.
+Before moving into the conclusion of our project, we would like to mention a couple of important things. First, the variables used to create the models by race were by no means exhaustive of those in the data set, and therefore are likely to be missing lots of important information. It is unreasonable to think that a model which includes information almost solely related to one participant would be entirely accurate in making predictions about the outcome of a two-person scenario. Second, even with the model outcomes only considering the decision of the participant, they are still relatively inaccurate, as displayed by the confusion matrices. For these reasons, we do not feel that the race model results are able to be confidently generalized to speed dating events, and believe that further research into the differences in outcomes across individuals of different ethnic backgrounds would be interesting.
 
 # Conclusion
 
 It is very clear that dating and human interactions are very complex.  We had a fascinating and complex data set to explore.  In addition to measuring each person’s desired compatibilities, their ratings of themselves, and the interaction of the person on the other side of the table, we also had to try to predict what would happen when two different individuals interacted.  What we see in the data is a very complex matrix of traits, but what we do not see is the multifaceted reality of the interaction.  Was a person in a bad mood during the session?  Was either influenced by the previous 4-minute session they had just minutes ago?
 One of the first efforts we had was to naively believe that people are mostly influenced by a single trait in potential mates.  While the models we generated from this approach were fairly accurate, they had disappointing overall results.  However, this simple model revealed some shortcomings that would help to create better models.
 
-In our second question, we also had somewhat disappointing results. The accuracy was good, but as we mentioned previously it was not very accurate at predicting matches based on the data available despite using the as many parameters as would improve the model. This further speaks to the idea that human interaction is extremely complex and there are surely many aspects of these 4 minutes speed dates that are not captured in the dataset.
+In our second question, we also had somewhat disappointing results. The accuracy was good, but as we mentioned previously it was not very accurate at predicting matches based on the data available despite using the as many parameters as would improve the model. This further speaks to the idea that human interaction is extremely complex and there are surely many aspects of these 4 minutes speed dates that are not captured in the data set.
 
-QUICK PARAGRAPH BY JARED ABOUT FINDINGS
+Our final research question sought out differences in speed dating preferences and outcomes based on race. Our exploratory data analysis yielded a few interesting results in this regard, such as a dominant importance towards attractiveness across all races. Additionally, we saw that participants of more collectivist cultures seemed to value shared interests and sincerity slightly more. The logistic regression models built for individual races also revealed some interesting results, as discussed in the prior section. However, we feel that a more complete set of variables should be included in future research to acquire a more accurate assessment.
 
 # References
 
