@@ -845,5 +845,4 @@ Our final research question sought out differences in speed dating preferences a
 
 1. Diane Arieff Zaga. "Matchmaker, Matchmaker". The Jewish Journal, February 2–8, 1996.
 2. “Speed-dating as an invaluable tool for studying romantic attraction: A methodological primer”, Finkel, Eastwick, and Matthews, 2007, Personal Relationships,        Volume 14.
-3. https://doi.org/10.1016/j.jrp.2021.104113, “What you see is what you want to get: Perceived abilities outperform objective test performance in predicting mate       appeal in speed dating”, Hofer et al, 2021.
-4. https://doi. org/10.1371/journal.pone.0274860, “Originality in online dating profile texts: “How does perceived originality affect impression formation and what     makes a text original?” van der Zanden T, Schouten AP, Mos MBJ, Krahmer EJ.
+3. https://www.kaggle.com/datasets/ulrikthygepedersen/speed-dating
