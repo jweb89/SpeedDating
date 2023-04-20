@@ -191,6 +191,7 @@ The `met` variable records whether or not the participant and partner have met b
 
 JOSH AND MIKE ADD CREATED VARIABLE DESCRIPTIONS
 
+The 'male_with_desireable_mate' and 'female_with_desireable_mate' are datasets filtered such that they contain dating encounters where the counterpart was an 8 or higher in their most desired category.  The 'model_whats_important_male' and 'model_whats_important_female' are the logistic models that attempt to explain the probability of a person desiring a date given their score on a mate's most desired trait.
 
 ## Exploratory Data Analysis: Descriptive Statistics and Visualizations
 
@@ -870,3 +871,11 @@ Our final research question sought out differences in speed dating preferences a
 1. Diane Arieff Zaga. "Matchmaker, Matchmaker". The Jewish Journal, February 2–8, 1996.
 2. “Speed-dating as an invaluable tool for studying romantic attraction: A methodological primer”, Finkel, Eastwick, and Matthews, 2007, Personal Relationships,        Volume 14.
 3. https://www.kaggle.com/datasets/ulrikthygepedersen/speed-dating
+
+# Contributions
+JARED, JOSH, MIKE -We need to add this section.  I just plopped some stuff in here off the top of my head...
+Mike: Identified several research papers and datasets related to weather (not used), wrote an initial draft of the paper, wrote the initial draft of the presentation, research question #1, located references, some dataset manipulation for the purposes of answering research question.
+Jared: Identified several datasets that were sports and betting-related.  Drove the effort to moving the paper into R for a more seamless environment.  Answered research question #3.  Provided much of the descriptive statistics section.
+Josh: Found the dataset that we moved forward with to create this paper.  Provided much of the initial programming to get the dataset to a usable state along with transformations to answer research question #2.  Created a common code environment on R-Studio Cloud that we used at the start, then migrated us to a Github repository for shared code.  
+
+
