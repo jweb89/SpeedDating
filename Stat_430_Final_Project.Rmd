@@ -794,8 +794,8 @@ LHAmodelAIC = glm(formula = decision ~ importance_same_religion + attractive_imp
 ```
 
 ```{r results = "markup"}
-summary(LHAmodelAIC)
-vif(LHAmodelAIC)
+knitr::kable(LHAmodelAIC$coefficients)
+knitr::kable(vif(LHAmodelAIC))
 
 logLik(LHAmodelAIC); logLik(LHAmodel);AIC(LHAmodelAIC, LHAmodel)
 
