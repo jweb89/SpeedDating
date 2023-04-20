@@ -9,7 +9,12 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+#knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE, 
+                      results = "hide",
+                      warning = FALSE,
+                      message = FALSE
+                      )
 library(dplyr)
 library(ggplot2)
 library(tidyverse)
@@ -195,7 +200,7 @@ The `male_with_desireable_mate` and `female_with_desireable_mate` are datasets f
 
 ## Exploratory Data Analysis: Descriptive Statistics and Visualizations
 
-```{r}
+```{r results = "markup"}
 df <- data.frame() 
 num_vars <- sapply(speed_dating, is.numeric) 
 for(n in names(speed_dating)[num_vars]) {
@@ -211,19 +216,15 @@ knitr::kable(summarytable, row.names = FALSE)
 
 The above table shows summary statistics for all numeric variables in the data set, other than those initially removed.
 
-```{r}
+```{r results = "markup"}
 sum(speed_dating$match == 1) / dim(speed_dating)[1] * 100
 sum(male$decision == 1) / dim(male)[1] * 100
 sum(female$decision == 1) / dim(female)[1] * 100
-
-sum(male_with_desireable_mate$decision == 1) / dim(male_with_desireable_mate)[1] * 100
-sum(female_with_desireable_mate$decision == 1) / dim(female_with_desireable_mate)[1] * 100
-
 ```
 
-Across the entire data set, approximately 16.47% of dates resulted in a match. While men are likely to want to date their partner nearly 50% of the time, women are much less so at about 37%. MIKE TO WRITE SENTENCE ABOUT DESIRABLE MATE PERCENTAGES
+Across the entire data set, approximately 16.47% of dates resulted in a match. While men are likely to want to date their partner nearly 50% of the time, women are much less so at about 37%.
 
-```{r}
+```{r results = "markup"}
 # Bar chart of important features
 ggplot(male, aes(most_important_category)) +
   geom_bar(fill = "#0073C2FF")  +
@@ -236,7 +237,7 @@ ggplot(female, aes(most_important_category)) +
 
 The above bar charts show the traits that are desired most often, as expressed by the participants.  Men overwhelmingly state that their most important attribute that they are looking for in a date is attractiveness, almost two out of every three men.  In contrast, women seem to have a much more balanced selection of desired traits.  The most important trait to women is that of sincerity, followed closely by attractiveness and intelligence.
 
-```{r}
+```{r results = "markup"}
 combined_pref = data.frame(
   preference = rep(c("attractive", "sincere", "intelligence", "funny", "ambition", "shared interests"), 2),
   average = c(
@@ -265,7 +266,7 @@ ggplot(combined_pref, aes(preference, average, fill = gender)) +
 
 The above table shows the average percentage of importance for six traits, colored by men and women. This chart shows that men tend to weigh attractiveness as the most important trait while women are more evenly spread out among the importance of the traits. This idea surrounding the most important trait will be explored in our first research question.
 
-```{r}
+```{r results = "markup"}
 race_traits = data.frame(
   traits = rep(c("attractive", "sincere", "intelligence", "funny", "ambition", "shared interests"), 4),
   average = c(
@@ -312,7 +313,7 @@ In terms of analysis, the chart above offers many findings which may of interest
 
 While some of these possible reasons may be in agreement with our readers, and some may not, it is important to remember that they are all speculation, at the end of the day, and further research would be of value.
 
-```{r}
+```{r results = "markup"}
 race_expected = data.frame(preference = c("Same Race Importance", "Same Race Importance", "Same Race Importance", "Same Race Importance", "Same Religion Importance", "Same Religion Importance", "Same Religion Importance", "Same Religion Importance", "Expected Happy w/ SD", "Expected Happy w/ SD", "Expected Happy w/ SD", "Expected Happy w/ SD", "Expected Num. Interested", "Expected Num. Interested", "Expected Num. Interested", "Expected Num. Interested", "Expected Num. Matches","Expected Num. Matches", "Expected Num. Matches", "Expected Num. Matches" ), race = rep(c("APIAA", "ECA", "LHA", "BAA"), 5), 
 average = c(
 mean(na.omit(APIAA$importance_same_race)),
@@ -348,7 +349,7 @@ ggplot(race_expected, aes(preference, average, fill = race)) +
 
 The chart above is very similar to the previous chart, and interpretation will be kept to a minimum. By far the most interesting statistic is that ECA individuals rank the importance of their partner being of the same race and same religion the highest. This is very relevant in the modern age, where inclusive and diverse cultures are highly desired. It appears that ECA individuals may be less accepting of others than they make it seem, but this also could be a residual effect of the past. I would guess that these numbers will continue to grow closer together amongst all races over time.
 
-```{r}
+```{r results = "markup"}
 numeric_data<-select_if(speed_dating, is.numeric)
 cor_df = cor(numeric_data, use = "pairwise.complete.obs")
 cor_df <- as.data.frame(as.table(cor_df))
@@ -371,7 +372,8 @@ As mention earlier, mens' preferences most often point to the importance of attr
 Another interesting piece of information uncovered was the willingness of each gender to agree to a date.  Recall that the result of each interaction between participants results in two ‘votes’ being placed, one for each side.  An actual date only occurs if both participants desire a date.  Among men, they requested a date in 47% of the interactions.  Women requested a date at a 36% rate.  
 To test out the theory that a person’s most desired trait is the only trait that matters, we created two models, one for each gender.  For the men, the results are the following:
 
-```{r}
+```{r results = "markup"}
+set.seed(123)
 index_md<- sample(dim(speed_dating)[1], round(dim(speed_dating)[1]*0.8))
 train_md<- speed_dating[index_md,]
 test_md<- speed_dating[-index_md,]
@@ -397,7 +399,7 @@ model_whats_important_female = glm(decision ~ most_important_cat_score, female_f
 
 Using an 80/20 test split, and examining the results, we see that we have an accuracy rate of 66%.
 
-```{r}
+```{r results = "markup"}
 prob_md<-stats::predict(model_whats_important_male, newdata=test_md)#  this will result in log odds ratio
 prob_md<-stats::predict(model_whats_important_male, newdata=test_md, type="response") 
 # `type=response` provides predicted probability 
@@ -414,7 +416,7 @@ addmargins(tab_md)
 Looking closely at the results, several things are worth noting.  The model predicts that men will ask to date at a rate of 442/(442+943) or 32% versus the previously mentioned 47%.  
 The result for the women seems to be a bit better, accurately predicting 77% of choices to date or not to date.
 
-```{r}
+```{r results = "markup"}
 summary(model_whats_important_female)$coef
 prob_md<-stats::predict(model_whats_important_female, newdata=test_md)#  this will result in log odds ratio
 prob_md<-stats::predict(model_whats_important_female, newdata=test_md, type="response") 
@@ -431,28 +433,29 @@ addmargins(tab_md)
 
 Both models seem to share the characteristic that they do a great job of predicting incompatible people!  
 Another question that this brings up is what happens when the person’s rating of the other's most important attribute is high?  One of the columns in the data set is the person’s rating of the other, and we can look into how this rating, in combination with the person's most desired trait, affects the desire to ask for a date.  As an example of this, this might be a woman whose most desired trait is that of intelligence, and her rating of the potential date’s intelligence.  
-Can we accurately predict what a man will do when his counterpart ’s most desired characteristic is scored by them as 8 or higher? In this condition, they are likely to request a date over 72% of the time.  
-
-```{r}
+  
+```{r results = "markup"}
 #
 male_with_desireable_mate <- male_for_decision_model %>%
   filter(most_important_cat_score >= 8)
 
 sum(male_with_desireable_mate$decision == 1) / dim(male_with_desireable_mate)[1]
 ```
-
-If a woman’s most desired trait is 8 or higher, she is only 57% likely to request a date.  This seems to affirm that more than one trait is important to women.
+Can we accurately predict what a man will do when his counterpart ’s most desired characteristic is scored by them as 8 or higher? In this condition, they are likely to request a date over 72% of the time.
 
 ## What if we filter women where their MOST DESIRED characteristic is high?  >8?
 ## Not so certain.  Maybe women's preferences are more balanced?
 
-```{r}
+```{r results = "markup"}
 #
 female_with_desireable_mate <- female_for_decision_model %>%
   filter(most_important_cat_score > 8)
 
 sum(female_with_desireable_mate$decision == 1) / dim(female_with_desireable_mate)[1]
 ```
+
+If a woman’s most desired trait is 8 or higher, she is only 57% likely to request a date.  This seems to affirm that more than one trait is important to women.
+
 As a researcher, it seems clear that the idea of a most important trait being singularly important is not the way the real world works.  These can help to create a model that does a decent job of predicting a person's desire to date, but there are likely layers of complexity that need to be added to create a truly accurate model.
 
 
@@ -477,14 +480,14 @@ everything_model<-glm(match ~ wave + gender + age + age_o + d_age + race + race_
     tv + theater + movies + concerts + music + shopping + yoga + 
     interests_correlate + expected_happy_with_sd_people + expected_num_interested_in_me + 
     expected_num_matches + like + guess_prob_liked + met + criteria_o_percent + criteria_percent, family = "binomial", data=speed_dating)
-stepAIC(everything_model)
+#stepAIC(everything_model)
 ```
 
 
 
 ### Create Training and testing set
 
-```{r,comment=NA}
+```{r}
 set.seed(1000)
 index<- sample(dim(speed_dating)[1], round(dim(speed_dating)[1]*0.8))
 train<- speed_dating[index,]
@@ -495,7 +498,7 @@ test<- speed_dating[-index,]
 
 ### Logistic Regression 
 
-```{r, comment=NA}
+```{r results = "markup"}
 
 mdl = glm(formula = match ~ d_age + race + race_o + importance_same_religion + 
     pref_o_attractive + pref_o_sincere + pref_o_ambitious + attractive_o + 
@@ -519,7 +522,7 @@ vif(mdl)
 
 ### After Removing Multicolinearity
 
-```{r}
+```{r results = "markup"}
 mdl =glm(formula = match ~ d_age + race + race_o + importance_same_religion + 
     pref_o_attractive + pref_o_sincere + pref_o_ambitious + attractive_o + 
     sinsere_o + funny_o + ambitous_o + shared_interests_o + funny_important + 
@@ -538,7 +541,7 @@ vif(mdl)
 
 ### Prediction Accuracy Using Confusion matrix
 
-```{r, comment=NA}
+```{r results = "markup"}
 prob1<-stats::predict(mdl, newdata=test)#  this will result in log odds ratio
 prob1<-stats::predict(mdl, newdata=test, type="response") 
 
@@ -557,7 +560,7 @@ addmargins(tab1)
 
 ### Visualize the Logistic Model
 
-```{r, comment=NA}
+```{r results = "markup"}
 
 params = c('d_age', 'importance_same_religion', 'pref_o_attractive', 'pref_o_sincere', 'pref_o_ambitious', 'attractive_o', 'sinsere_o', 'funny_o', 'ambitous_o', 'shared_interests_o', 'funny_important', 'ambtition_important', 'shared_interests_important', 'attractive_partner', 'sincere_partner', 'intelligence_partner', 'ambition_partner', 'tvsports', 'museums', 'art', 'clubbing', 'reading', 'tv', 'movies', 'concerts', 'shopping', 'expected_num_interested_in_me', 'expected_num_matches', 'like', 'guess_prob_liked'
 )
@@ -620,7 +623,7 @@ APIAAmodel = glm(decision~gender+age+samerace+importance_same_race+importance_sa
 summary(APIAAmodel)
 vif(APIAAmodel)
 
-stepAIC(APIAAmodel)
+#stepAIC(APIAAmodel)
 
 APIAAmodelAIC = glm(formula = decision ~ gender + age + importance_same_religion + 
     attractive_important + sincere_important + intellicence_important + 
@@ -628,6 +631,9 @@ APIAAmodelAIC = glm(formula = decision ~ gender + age + importance_same_religion
     expected_num_matches + criteria_percent, family = binomial, 
     data = trainAPIAA)
 
+```
+
+```{r results = "markup"}
 summary(APIAAmodelAIC)
 vif(APIAAmodelAIC)
 
@@ -684,14 +690,16 @@ ECAmodel =  glm(decision~gender+age+samerace+importance_same_race+importance_sam
 summary(ECAmodel)
 vif(ECAmodel)
 
-stepAIC(ECAmodel)
+#stepAIC(ECAmodel)
 
 ECAmodelAIC = glm(formula = decision ~ gender + samerace + importance_same_religion + 
     attractive_important + sincere_important + intellicence_important + 
     funny_important + ambtition_important + expected_happy_with_sd_people + 
     expected_num_matches + interests_correlate + criteria_percent, 
     family = binomial, data = trainECA)
+```
 
+```{r results = "markup"}
 summary(ECAmodelAIC)
 vif(ECAmodelAIC)
 
@@ -746,12 +754,14 @@ BAAmodel =  glm(decision~gender+age+samerace+importance_same_race+importance_sam
 summary(BAAmodel)
 vif(BAAmodel)
 
-stepAIC(BAAmodel)
+#stepAIC(BAAmodel)
 
 BAAmodelAIC = glm(formula = decision ~ importance_same_race + importance_same_religion + 
     sincere_important + expected_happy_with_sd_people + expected_num_matches + 
     criteria_percent, family = binomial, data = trainBAA)
+```
 
+```{r results = "markup"}
 summary(BAAmodelAIC)
 vif(BAAmodelAIC)
 
@@ -771,7 +781,6 @@ tab1 = table(pred1, testBAA$match)
 addmargins(tab1)
 sum(diag(tab1))/sum(tab1)
 ```
-
 
 The final model developed for Black/African-American participants is as follows:
 
@@ -801,13 +810,15 @@ LHAmodel =  glm(decision~gender+age+samerace+importance_same_race+importance_sam
 summary(LHAmodel)
 vif(LHAmodel)
 
-stepAIC(LHAmodel)
+#stepAIC(LHAmodel)
 
 LHAmodelAIC = glm(formula = decision ~ importance_same_religion + attractive_important + 
     sincere_important + funny_important + ambtition_important + 
     expected_happy_with_sd_people + expected_num_matches + criteria_percent, 
     family = binomial, data = trainLHA)
+```
 
+```{r results = "markup"}
 summary(LHAmodelAIC)
 vif(LHAmodelAIC)
 
@@ -873,7 +884,8 @@ Our final research question sought out differences in speed dating preferences a
 3. https://www.kaggle.com/datasets/ulrikthygepedersen/speed-dating
 
 # Contributions
-JARED, JOSH, MIKE -We need to add this section.  I just plopped some stuff in here off the top of my head...
+We are all satisfied with group member contributions
+
 Mike: Identified several research papers and datasets related to weather (not used), wrote an initial draft of the paper, wrote the initial draft of the presentation, research question #1, located references, some dataset manipulation for the purposes of answering research question.
 Jared: Identified several datasets that were sports and betting-related.  Drove the effort to moving the paper into R for a more seamless environment.  Answered research question #3.  Provided much of the descriptive statistics section.
 Josh: Found the dataset that we moved forward with to create this paper.  Provided much of the initial programming to get the dataset to a usable state along with transformations to answer research question #2.  Created a common code environment on R-Studio Cloud that we used at the start, then migrated us to a Github repository for shared code.  
