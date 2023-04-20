@@ -443,8 +443,7 @@ sum(male_with_desireable_mate$decision == 1) / dim(male_with_desireable_mate)[1]
 ```
 Can we accurately predict what a man will do when his counterpart ’s most desired characteristic is scored by them as 8 or higher? In this condition, they are likely to request a date over 72% of the time.
 
-## What if we filter women where their MOST DESIRED characteristic is high?  >8?
-## Not so certain.  Maybe women's preferences are more balanced?
+What if we filter women where their MOST DESIRED characteristic is greater than 8?
 
 ```{r results = "markup"}
 #
@@ -458,11 +457,9 @@ If a woman’s most desired trait is 8 or higher, she is only 57% likely to requ
 
 As a researcher, it seems clear that the idea of a most important trait being singularly important is not the way the real world works.  These can help to create a model that does a decent job of predicting a person's desire to date, but there are likely layers of complexity that need to be added to create a truly accurate model.
 
-
-
 ## Knowing the complexity of human nature, should desired characteristics be treated more holistically?
 
-### Variable Selection
+### Following variable selection, creation of training and test data, building a logistic model, and removing multicollinearity
 
 ```{r}
 everything_model<-glm(match ~ wave + gender + age + age_o + d_age + race + race_o + 
@@ -483,10 +480,6 @@ everything_model<-glm(match ~ wave + gender + age + age_o + d_age + race + race_
 #stepAIC(everything_model)
 ```
 
-
-
-### Create Training and testing set
-
 ```{r}
 set.seed(1000)
 index<- sample(dim(speed_dating)[1], round(dim(speed_dating)[1]*0.8))
@@ -494,11 +487,7 @@ train<- speed_dating[index,]
 test<- speed_dating[-index,]
 ```
 
-
-
-### Logistic Regression 
-
-```{r results = "markup"}
+```{r}
 
 mdl = glm(formula = match ~ d_age + race + race_o + importance_same_religion + 
     pref_o_attractive + pref_o_sincere + pref_o_ambitious + attractive_o + 
@@ -514,13 +503,11 @@ mdl = glm(formula = match ~ d_age + race + race_o + importance_same_religion +
 
 
 
-summary(mdl)$coef
+mdl$coefficients
 
 vif(mdl)
 
 ```
-
-### After Removing Multicolinearity
 
 ```{r results = "markup"}
 mdl =glm(formula = match ~ d_age + race + race_o + importance_same_religion + 
@@ -532,12 +519,10 @@ mdl =glm(formula = match ~ d_age + race + race_o + importance_same_religion +
     reading + tv + movies + concerts + shopping + expected_num_interested_in_me + 
     expected_num_matches + like + guess_prob_liked, family = "binomial", data = speed_dating)
 
-summary(mdl)$coef
+knitr::kable(mdl$coefficients)
 
-vif(mdl)
+knitr::kable(vif(mdl))
 ```
-
-
 
 ### Prediction Accuracy Using Confusion matrix
 
@@ -555,8 +540,6 @@ addmargins(tab1)
  sum(diag(tab1))/sum(tab1)
 
 ```
-
-
 
 ### Visualize the Logistic Model
 
@@ -583,11 +566,7 @@ second_half <- my_list_split[[2]]
 ggarrange(plotlist = first_half)
 ggarrange(plotlist = second_half)
 
-
-
-
 ```
-
 
 The goal of this research question was to create the best possible model to predict whether a match would occur without using the decisions from either individual. This proved to be very difficult due to the number of variables present and the nature of human interaction in relationships.
 
@@ -599,8 +578,6 @@ Out of all interactions and models tested ,this model does have the best accurac
 
 Lastly, we have provided visualizations of the logistic model with nearly all of the parameters. Many of these graphs show interesting patterns about the parameter's affect on the chance of a match. For example we can see that the statistics collected for the `like` meaning how much you liked your partner and `guess_prop_liked` meaning how much you think your partner liked you appear to have a strong affect on the models prediction. Additionally, The variables `amibtion_important` and `pref_o_ambitious` appear to have almost no effect on the model due to their straight line visualizations. This may mean they can be pruned from the model, however more tweaking and analysis of the model may need to be performed because removing these does decrease the accuracy in our tests.
 
-
-
 ## What impact does race have on speed dating expectations, preferences, and outcomes?
 
 In this section, we have set out to build regression models for participants of each race, and to compare our results. Before discussing each one individually, we would like to mention some general information which will be relevant to all of the following models. First and foremost, we have strategically chosen variables which may or may not be included in the models, based on interest and relevance. As has been noted in the data set description, each observation represents both a participant, and their partner, during the speed dating event. While having all of this information is great, we are seeking to discover how the effect of variables change based on the participant's race. Therefore, we are not interested in the smaller details of the partner, but only those of the participant. The following predictor variables have been included in all of the initial models: `gender`, `age`, `samerace`, `importance_same_race`,`importance_same_religion`, `attractive_important`, `sincere_important`, `intellicence_important`, `funny_important`, `ambtition_important`, `expected_happy_with_sd_people`, `expected_num_matches`, `interests_correlate`, `criteria_percent`. The response variable we have chosen is `decision`, which represents whether or not the participant would like to match, not whether a match will actually occur. The reasoning for this is, once again, that we are not too concerned with information about the partner, but such information may have a large impact on the partner's decision, and therefore the match. In order to avoid such a dilemma, we have chosen to simply look at the decision of the participant. The aggregate `interests_correlate` and `criteria_percent` provide a bit of information into the partner, without including many variables individually.
@@ -608,7 +585,6 @@ In this section, we have set out to build regression models for participants of 
 We would also like to discuss the general steps taken in building a logistic regression model for each race, so as to avoid explaining the steps individually. Our first step was to utilize separate data frames filtered to only include individuals of a certain race, and split them into training and testing sets. This was done using a 70/30 split, and random sampling of the rows, resulting in training sets consisting of 70% of the data, and testing sets resulting in 30%. Next, we built a logistic regression model using all of the variables mentioned in the previous paragraph, with the binary `decision` variable as our output. We then checked the variance inflation factors for each of the regressors, to ensure no extreme multicollinearity was present. The `stepAIC` function was then used to find the best combination of predictor variables, which will have the lowest Akaike Information Criterion measure, or AIC. A lower AIC value represents a better balance between the model's goodness-of-fit and model simplicity. A likelihood ratio test was then performed to determine whether the nested model, chosen by the `stepAIC` function, was a better choice than the initial model, which in all cases was true. 
 
 Receiver Operating Characteristic curves were then used to visualize the trade-off between false positives and true positives for each model, and using the ROC curve, an "optimal" probability threshold was found. The easiest way to think of this is that a logistic regression model gives outputs which indicate the probability of the response variable being a 1. In our case, this meant the probability of the `decision` variable being a yes. Once these probabilities have been generated, choosing where the cut-off lies to round up to 1 or down to 0 depends on the research itself. The obvious answer would be to use .5 as a threshold, however, this is not always the best when data is unbalanced. Additionally, either false positives or false negatives may be of greater importance in certain cases, such as when predicting whether a patient has a disease or not. While giving the patient the medicine when they do not really have the disease may not cause much harm (false positive), not giving the patient medicine when they do have the disease could be deadly (false negative). Last but not least, a confusion matrix was created to determine the accuracy of the final model for each race. While this value is certainly important, and helps to determine the accuracy of model coefficients, our goal is mostly look at the differences between models.
-
 
 ### Asian, Pacific Islander, and Asian-American Regression
 
@@ -675,7 +651,6 @@ In order to interpret the model coefficients, we must first exponentiate both si
 + For every one unit increase in the rating of `expected_happy_with_sd_people`, the odds of deciding yes are expected to decrease by 8%.
 + For every one match increase in `expected_num_matches`, the odds of deciding yes are expected to increase by 38%.
 + For every one hundredth increase in `criteria_percent`, the odds of deciding yes are expected to increase by 10%
-
 
 ### European and Caucasian-American Regression
 
