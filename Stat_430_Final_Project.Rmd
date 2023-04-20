@@ -610,9 +610,18 @@ APIAAmodelAIC = glm(formula = decision ~ gender + age + importance_same_religion
 ```
 
 ```{r results = "markup"}
-summary(APIAAmodelAIC)
-vif(APIAAmodelAIC)
+knitr::kable(APIAAmodelAIC$coefficients)
+```
 
+The above table displays the final model coefficients after choosing the lowest Akaike Information Criterion.
+
+```{r results = "markup"}
+knitr::kable(vif(APIAAmodelAIC))
+```
+
+The above table shows the Variance Inflation Factor ratios of the included coefficients.
+
+```{r results = "markup"}
 logLik(APIAAmodelAIC); logLik(APIAAmodel);AIC(APIAAmodelAIC, APIAAmodel)
 
 G = -2*(-712.1913)- (-2*(-711.4279))
@@ -675,9 +684,18 @@ ECAmodelAIC = glm(formula = decision ~ gender + samerace + importance_same_relig
 ```
 
 ```{r results = "markup"}
-summary(ECAmodelAIC)
-vif(ECAmodelAIC)
+knitr::kable(ECAmodelAIC$coefficients)
+```
 
+The above table displays the final model coefficients after choosing the lowest Akaike Information Criterion.
+
+```{r results = "markup"}
+knitr::kable(vif(ECAmodelAIC))
+```
+
+The above table shows the Variance Inflation Factor ratios of the included coefficients.
+
+```{r results = "markup"}
 logLik(ECAmodelAIC); logLik(ECAmodel);AIC(ECAmodelAIC, ECAmodel)
 
 G = -2*(-1706.482)- (-2*(-1704.785))
@@ -737,9 +755,18 @@ BAAmodelAIC = glm(formula = decision ~ importance_same_race + importance_same_re
 ```
 
 ```{r results = "markup"}
-summary(BAAmodelAIC)
-vif(BAAmodelAIC)
+knitr::kable(BAAmodelAIC$coefficients)
+```
 
+The above table displays the final model coefficients after choosing the lowest Akaike Information Criterion.
+
+```{r results = "markup"}
+knitr::kable(vif(BAAmodelAIC))
+```
+
+The above table shows the Variance Inflation Factor ratios of the included coefficients.
+
+```{r results = "markup"}
 logLik(BAAmodelAIC); logLik(BAAmodel);AIC(BAAmodelAIC, BAAmodel)
 
 G = -2*(-152.2891)- (-2*(-148.6948))
@@ -795,8 +822,17 @@ LHAmodelAIC = glm(formula = decision ~ importance_same_religion + attractive_imp
 
 ```{r results = "markup"}
 knitr::kable(LHAmodelAIC$coefficients)
-knitr::kable(vif(LHAmodelAIC))
+```
 
+The above table displays the final model coefficients after choosing the lowest Akaike Information Criterion.
+
+```{r results = "markup"}
+knitr::kable(vif(LHAmodelAIC))
+```
+
+The above table shows the Variance Inflation Factor ratios of the included coefficients.
+
+```{r results = "markup"}
 logLik(LHAmodelAIC); logLik(LHAmodel);AIC(LHAmodelAIC, LHAmodel)
 
 G = -2*(-217.9301)- (-2*(-216.1475))
