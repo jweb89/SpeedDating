@@ -189,7 +189,7 @@ The `expected_happy_with_sd_people` provides a score for how happy the participa
 
 The `met` variable records whether or not the participant and partner have met before, in a binary format. The `decision` variable provides the decision by the participant whether or not to meet again, and the `decision_o` variable provides the decision by the partner whether or not to meet again, both in a binary format. The `match` variable indicates whether or not the individuals would both like to meet again, based on the decision variables, in a binary format.
 
-JOSH AND MIKE ADD CREATED VARIABLE DESCRIPTIONS
+We created two variables `criteria_percent` and `criteria_o_percent` which were derived by multiplying the importance ratings(adding up to 100) and the ratings of those traits(0 - 10) and dividing by 1000. This yielded a number between 0 and 1 that represented the weighted percentage of the importance factor the person and than partner gave each other.
 
 The 'male_with_desireable_mate' and 'female_with_desireable_mate' are datasets filtered such that they contain dating encounters where the counterpart was an 8 or higher in their most desired category.  The 'model_whats_important_male' and 'model_whats_important_female' are the logistic models that attempt to explain the probability of a person desiring a date given their score on a mate's most desired trait.
 
