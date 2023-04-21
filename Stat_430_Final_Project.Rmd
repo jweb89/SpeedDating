@@ -477,7 +477,7 @@ everything_model<-glm(match ~ wave + gender + age + age_o + d_age + race + race_
     tv + theater + movies + concerts + music + shopping + yoga + 
     interests_correlate + expected_happy_with_sd_people + expected_num_interested_in_me + 
     expected_num_matches + like + guess_prob_liked + met + criteria_o_percent + criteria_percent, family = "binomial", data=speed_dating)
-#stepAIC(everything_model)
+stepAIC(everything_model)
 ```
 
 ```{r}
@@ -599,7 +599,7 @@ APIAAmodel = glm(decision~gender+age+samerace+importance_same_race+importance_sa
 summary(APIAAmodel)
 vif(APIAAmodel)
 
-#stepAIC(APIAAmodel)
+stepAIC(APIAAmodel)
 
 APIAAmodelAIC = glm(formula = decision ~ gender + age + importance_same_religion + 
     attractive_important + sincere_important + intellicence_important + 
@@ -674,7 +674,7 @@ ECAmodel =  glm(decision~gender+age+samerace+importance_same_race+importance_sam
 summary(ECAmodel)
 vif(ECAmodel)
 
-#stepAIC(ECAmodel)
+stepAIC(ECAmodel)
 
 ECAmodelAIC = glm(formula = decision ~ gender + samerace + importance_same_religion + 
     attractive_important + sincere_important + intellicence_important + 
@@ -747,7 +747,7 @@ BAAmodel =  glm(decision~gender+age+samerace+importance_same_race+importance_sam
 summary(BAAmodel)
 vif(BAAmodel)
 
-#stepAIC(BAAmodel)
+stepAIC(BAAmodel)
 
 BAAmodelAIC = glm(formula = decision ~ importance_same_race + importance_same_religion + 
     sincere_important + expected_happy_with_sd_people + expected_num_matches + 
@@ -812,7 +812,7 @@ LHAmodel =  glm(decision~gender+age+samerace+importance_same_race+importance_sam
 summary(LHAmodel)
 vif(LHAmodel)
 
-#stepAIC(LHAmodel)
+stepAIC(LHAmodel)
 
 LHAmodelAIC = glm(formula = decision ~ importance_same_religion + attractive_important + 
     sincere_important + funny_important + ambtition_important + 
