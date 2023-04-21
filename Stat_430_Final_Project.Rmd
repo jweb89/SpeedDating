@@ -898,7 +898,9 @@ Our final research question sought out differences in speed dating preferences a
 We are all satisfied with group member contributions
 
 Mike: Identified several research papers and datasets related to weather (not used), wrote an initial draft of the paper, wrote the initial draft of the presentation, research question #1, located references, some dataset manipulation for the purposes of answering research question.
+
 Jared: Identified several datasets that were sports and betting-related.  Drove the effort to moving the paper into R for a more seamless environment.  Answered research question #3.  Provided much of the descriptive statistics section.
+
 Josh: Found the dataset that we moved forward with to create this paper.  Provided much of the initial programming to get the dataset to a usable state along with transformations to answer research question #2.  Created a common code environment on R-Studio Cloud that we used at the start, then migrated us to a Github repository for shared code.  
 
 
